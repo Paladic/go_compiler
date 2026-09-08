@@ -19,7 +19,6 @@ bin/
 obj/
 
 # IDE
-.vscode/
 .idea/
 
 # Visual Studio
