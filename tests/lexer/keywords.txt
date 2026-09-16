@@ -1,0 +1,26 @@
+package main
+
+func main() {
+    var hello = world
+    const value = test
+
+    if condition {
+        return
+    }
+
+    for rangeValue {
+        break
+    }
+}
+
+break default func interface select
+case defer go map struct
+chan else goto package switch
+const fallthrough if range type
+continue for import return var
+
+identifier
+_private
+hello123
+func123
+breakfast
