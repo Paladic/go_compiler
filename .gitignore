@@ -5,6 +5,7 @@ y.tab.c
 y.tab.h
 parser.tab.c
 parser.tab.h
+.vscode/c_cpp_properties.json
 
 # Object files
 *.o
