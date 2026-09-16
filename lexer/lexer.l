@@ -14,6 +14,13 @@ Buffer buffer;
 
 %}
 
+/* ---------- Идентификаторы ---------- */
+
+LETTER          [A-Za-z_]
+DIGIT           [0-9]
+IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
+
+
 %%
 
     /* Комментари внутри этого блока пишутся вот в этом синтаксесе и обязательно перед комментаривем табуляцию */
@@ -119,6 +126,13 @@ Buffer buffer;
 "var" {
     Logger::Token("VAR");
 }
+
+    /* ---------- Идентификаторы ---------- */
+
+{IDENTIFIER} {
+    Logger::Value("IDENTIFIER", string(yytext));
+}
+
 
 
     /* пробелы */
