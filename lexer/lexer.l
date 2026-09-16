@@ -18,6 +18,107 @@ Buffer buffer;
 
     /* Комментари внутри этого блока пишутся вот в этом синтаксесе и обязательно перед комментаривем табуляцию */
 
+    /* ---------- Ключевые слова ---------- */
+
+"break" {
+    Logger::Token("BREAK");
+}
+
+"default" {
+    Logger::Token("DEFAULT");
+}
+
+"func" {
+    Logger::Token("FUNC");
+}
+
+"interface" {
+    Logger::Token("INTERFACE");
+}
+
+"select" {
+    Logger::Token("SELECT");
+}
+
+"case" {
+    Logger::Token("CASE");
+}
+
+"defer" {
+    Logger::Token("DEFER");
+}
+
+"go" {
+    Logger::Token("GO");
+}
+
+"map" {
+    Logger::Token("MAP");
+}
+
+"struct" {
+    Logger::Token("STRUCT");
+}
+
+"chan" {
+    Logger::Token("CHAN");
+}
+
+"else" {
+    Logger::Token("ELSE");
+}
+
+"goto" {
+    Logger::Token("GOTO");
+}
+
+"package" {
+    Logger::Token("PACKAGE");
+}
+
+"switch" {
+    Logger::Token("SWITCH");
+}
+
+"const" {
+    Logger::Token("CONST");
+}
+
+"fallthrough" {
+    Logger::Token("FALLTHROUGH");
+}
+
+"if" {
+    Logger::Token("IF");
+}
+
+"range" {
+    Logger::Token("RANGE");
+}
+
+"type" {
+    Logger::Token("TYPE");
+}
+
+"continue" {
+    Logger::Token("CONTINUE");
+}
+
+"for" {
+    Logger::Token("FOR");
+}
+
+"import" {
+    Logger::Token("IMPORT");
+}
+
+"return" {
+    Logger::Token("RETURN");
+}
+
+"var" {
+    Logger::Token("VAR");
+}
 
 
     /* пробелы */
