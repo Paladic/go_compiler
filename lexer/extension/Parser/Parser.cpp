@@ -67,3 +67,21 @@ string Parser::removeLowLines(const string& text) {
     return value;
 
 }
+
+double Parser::Imaginary(const string& text) {
+    
+    string value = text.substr(0, text.size() - 1); // удаляем последний символ (i)
+
+    // Если оставшийся текст - содержит признаки вещественного числа, то преобразуем его в него  
+    if (
+        value.find('.') != string::npos ||
+        value.find('e') != string::npos ||
+        value.find('E') != string::npos ||
+        value.find('p') != string::npos ||
+        value.find('P') != string::npos
+    ) {
+        return Float(value);
+    }
+
+    return static_cast<double>(Integer(value)); // иначе целочисленный
+}

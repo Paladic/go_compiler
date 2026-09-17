@@ -26,6 +26,10 @@ public:
     /// @return число с плавающей точкой
     static double Float(const string& text);
     
+    /// @brief Преобразовывает строку в мнимое число
+    /// @param text строка
+    /// @return мннимое число без мнимой части
+    static double Imaginary(const string& text);
 };
 
 #endif
