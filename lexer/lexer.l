@@ -640,13 +640,29 @@ STRING_CHAR         [^\\\"\n\r]
 
 %%
 
-int main(void)
+int main(int argc, char* argv[])
 {
-
 #ifdef _WIN32
+    SetConsoleCP(CP_UTF8);
     SetConsoleOutputCP(CP_UTF8);
 #endif
 
+    if (argc > 1) {
+        yyin = fopen(argv[1], "rb");
+
+        if (yyin == nullptr) {
+            std::cerr
+                << "Cannot open file: "
+                << argv[1]
+                << std::endl;
+
+            return 1;
+        }
+    }
     yylex();
+
+    if (argc > 1) {
+        fclose(yyin);
+    }
     return 0;
 }
