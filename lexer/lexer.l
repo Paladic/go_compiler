@@ -194,8 +194,48 @@ IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
 }
 
     /* ---------- Операторы присваивания ---------- */
-"="|"+="|"-="|"*="|"/="|"%="|"\&="|"\^="|"<<="|">>="|"\&^=" { 
-    Logger::Value("OPERATOR", string(yytext)); auto_semi = false;
+"=" { 
+    Logger::Value("OPERATOR", "="); auto_semi = false;
+}
+
+"+=" { 
+    Logger::Value("OPERATOR", "+="); auto_semi = false;
+}
+
+"-=" { 
+    Logger::Value("OPERATOR", "-="); auto_semi = false;
+}
+
+"*=" { 
+    Logger::Value("OPERATOR", "*="); auto_semi = false;
+}
+
+"/=" { 
+    Logger::Value("OPERATOR", "/="); auto_semi = false;
+}
+
+"%=" { 
+    Logger::Value("OPERATOR", "%="); auto_semi = false;
+}
+
+"&=" { 
+    Logger::Value("OPERATOR", "&="); auto_semi = false;
+}
+
+"^=" { 
+    Logger::Value("OPERATOR", "^="); auto_semi = false;
+}
+
+"<<=" { 
+    Logger::Value("OPERATOR", "<<="); auto_semi = false;
+}
+
+">>=" { 
+    Logger::Value("OPERATOR", ">>="); auto_semi = false;
+}
+
+"&^=" { 
+    Logger::Value("OPERATOR", "&^="); auto_semi = false;
 }
 
     /* ---------- Короткое объявление ---------- */
@@ -204,8 +244,12 @@ IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
 }
 
     /* ---------- Инкремент/декремент ---------- */
-"++"|"--" { 
-    Logger::Value("PUNCTUATION", string(yytext)); auto_semi = true;
+"++" { 
+    Logger::Value("OPERATOR", "++"); auto_semi = true;
+}
+
+"--" { 
+    Logger::Value("OPERATOR", "--"); auto_semi = true;
 }
 
     /* ---------- Оператор канала ---------- */
@@ -222,8 +266,20 @@ IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
 "}" { Logger::Value("PUNCTUATION", "}"); auto_semi = true; }
 
     /* ---------- Пунктуация ---------- */
-","|":"|"."|"..." { 
-    Logger::Value("PUNCTUATION", string(yytext)); auto_semi = false; 
+"," { 
+    Logger::Value("PUNCTUATION", ","); auto_semi = false; 
+}
+
+":" { 
+    Logger::Value("PUNCTUATION", ":"); auto_semi = false; 
+}
+
+"." { 
+    Logger::Value("PUNCTUATION", "."); auto_semi = false; 
+}
+
+"..." { 
+    Logger::Value("PUNCTUATION", "..."); auto_semi = false; 
 }
 
     /* ---------- Тильда ---------- */
