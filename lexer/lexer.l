@@ -177,6 +177,20 @@ IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
     Logger::Token("RIGHT_SHIFT");
 }
 
+    /* ---------- Логические операторы ---------- */
+
+"&&" {
+    Logger::Token("LOGICAL_AND");
+}
+
+"||" {
+    Logger::Token("LOGICAL_OR");
+}
+
+"!" {
+    Logger::Token("LOGICAL_NOT");
+}
+
     /* ---------- Идентификаторы ---------- */
 
 {IDENTIFIER} {
