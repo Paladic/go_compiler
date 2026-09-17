@@ -167,6 +167,16 @@ IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
     Logger::Token("BIT_CLEAR");
 }
 
+    /* ---------- Операторы сдвига ---------- */
+
+"<<" {
+    Logger::Token("LEFT_SHIFT");
+}
+
+">>" {
+    Logger::Token("RIGHT_SHIFT");
+}
+
     /* ---------- Идентификаторы ---------- */
 
 {IDENTIFIER} {
