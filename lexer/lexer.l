@@ -6,6 +6,7 @@
 
 #include <string>
 #include "extension/logger/logger.h"
+#include "extension/Parser/Parser.h"
 #include "extension/buffer/Buffer.h"
 
 using std::string;

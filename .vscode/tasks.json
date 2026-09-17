@@ -4,7 +4,7 @@
         {
             "label": "Build lexer",
             "type": "shell",
-            "command": "win_flex -o lexer/lex.yy.cpp lexer/lexer.l; if ($LASTEXITCODE -eq 0) { g++ lexer/lex.yy.cpp lexer/extension/logger/Logger.cpp lexer/extension/buffer/Buffer.cpp -o lexer/lexer.exe 2>&1 }",
+            "command": "win_flex -o lexer/lex.yy.cpp lexer/lexer.l; if ($LASTEXITCODE -eq 0) { g++ lexer/lex.yy.cpp lexer/extension/logger/Logger.cpp lexer/extension/buffer/Buffer.cpp lexer/extension/Parser/Parser.cpp -o lexer/lexer.exe 2>&1 }",
             "problemMatcher": "$gcc",
             "group": {
                 "kind": "build",
