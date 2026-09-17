@@ -40,6 +40,12 @@ public:
     /// @param text строка
     /// @return восьмиричное число соответсвующее escape символу
     static long long Rune(const string& text);
+    
+    /// @brief преобразует escape последовательность в символ
+    /// @param text escape послеодвательность
+    /// @return декодированный символ 
+    static string EscapeToString(const string& text);
+
 };
 
 #endif

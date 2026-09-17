@@ -124,3 +124,38 @@ long long Parser::DecodeEscape(const string& text) {
 
     return std::stoll(text.substr(1), nullptr, 8); // читаем как восьмиричный
 }
+
+string Parser::EscapeToString(const string& text) {
+    
+    long long code = DecodeEscape(text); // снчала декодируем его
+
+    // 1 байт
+    if (code <= 0x7F) {
+        return string(1, static_cast<char>(code));
+    }
+
+    string result;
+
+    // 2 байта
+    if (code <= 0x7FF) {
+        result += static_cast<char>(0xC0 | (code >> 6));
+        result += static_cast<char>(0x80 | (code & 0x3F));
+    }
+    
+    // 3 байта
+    else if (code <= 0xFFFF) {
+        result += static_cast<char>(0xE0 | (code >> 12));
+        result += static_cast<char>(0x80 | ((code >> 6) & 0x3F));
+        result += static_cast<char>(0x80 | (code & 0x3F));
+    }
+    
+    // 4 байта
+    else {
+        result += static_cast<char>(0xF0 | (code >> 18));
+        result += static_cast<char>(0x80 | ((code >> 12) & 0x3F));
+        result += static_cast<char>(0x80 | ((code >> 6) & 0x3F));
+        result += static_cast<char>(0x80 | (code & 0x3F));
+    }
+
+    return result;
+}
