@@ -50,6 +50,10 @@ DECIMAL_FLOAT       ({DECIMAL_DIGITS}"."{DECIMAL_DIGITS}?{DECIMAL_EXPONENT}?)|({
 HEX_MANTISSA        (({HEX_DIGITS}"."{HEX_DIGITS}?)|({HEX_DIGITS})|("."{HEX_DIGITS}))
 HEX_FLOAT           0[xX]_?{HEX_MANTISSA}{BINARY_EXPONENT}
 
+/* ---------- Мнимые литералы ---------- */
+
+IMAGINARY_LITERAL   ({DECIMAL_LITERAL}|{BINARY_LITERAL}|{OCTAL_LITERAL}|{OLD_OCTAL_LITERAL}|{HEX_LITERAL}|{DECIMAL_FLOAT}|{HEX_FLOAT})i
+
 %%
 
     /* Комментари внутри этого блока пишутся вот в этом синтаксесе и обязательно перед комментаривем табуляцию */
@@ -154,6 +158,15 @@ HEX_FLOAT           0[xX]_?{HEX_MANTISSA}{BINARY_EXPONENT}
 
 "var" {
     Logger::Token("VAR");
+}
+
+    /* ---------- Мнимые литералы ---------- */
+
+{IMAGINARY_LITERAL} {
+    Logger::Value(
+        "IMAGINARY_LITERAL",
+        Parser::Imaginary(yytext)
+    );
 }
 
     /* ---------- Литералы с плавающей точкой ---------- */
