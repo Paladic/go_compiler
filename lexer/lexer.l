@@ -149,6 +149,24 @@ IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
     Logger::Token("MODULO");
 }
 
+    /* ---------- Побитовые операторы ---------- */
+
+"&" {
+    Logger::Token("BIT_AND");
+}
+
+"|" {
+    Logger::Token("BIT_OR");
+}
+
+"^" {
+    Logger::Token("BIT_XOR");
+}
+
+"&^" {
+    Logger::Token("BIT_CLEAR");
+}
+
     /* ---------- Идентификаторы ---------- */
 
 {IDENTIFIER} {
