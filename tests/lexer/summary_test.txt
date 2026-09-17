@@ -1,0 +1,310 @@
+package main
+
+import "fmt"
+
+// ---------- Константы и целочисленные литералы ----------
+
+const decimal = 123
+const zero = 0
+const decimalUnderscore = 1_000_000
+
+const binary = 0b1010
+const binaryUpper = 0B1101
+const binaryUnderscore = 0b1010_0101
+
+const octal = 0o755
+const octalUpper = 0O644
+const oldOctal = 0755
+const oldOctalUnderscore = 0_755
+
+const hex = 0xFF
+const hexUpper = 0XABC
+const hexUnderscore = 0xCA_FE
+
+
+// ---------- Литералы с плавающей точкой ----------
+
+var float1 = 3.14
+var float2 = 1.
+var float3 = .5
+var float4 = 1e10
+var float5 = 1E10
+var float6 = 1.5e-3
+var float7 = 1_000.25
+var float8 = 1.2_3e4
+
+var hexFloat1 = 0x1p10
+var hexFloat2 = 0x1.fp3
+var hexFloat3 = 0x.8p-2
+var hexFloat4 = 0XAB.CDp+5
+
+
+// ---------- Мнимые литералы ----------
+
+var imaginary1 = 10i
+var imaginary2 = 3.14i
+var imaginary3 = 1e5i
+var imaginary4 = 0xFFi
+var imaginary5 = 0b101i
+var imaginary6 = 0x1.fp3i
+
+
+// ---------- Rune literals ----------
+
+var rune1 = 'a'
+var rune2 = 'Z'
+var rune3 = '\n'
+var rune4 = '\t'
+var rune5 = '\\'
+var rune6 = '\''
+var rune7 = '\101'
+var rune8 = '\x41'
+var rune9 = '\u0041'
+var rune10 = '\U00000041'
+
+
+// ---------- Интерпретируемые строки ----------
+
+var string1 = "hello"
+var string2 = "hello world"
+var string3 = "hello\nworld"
+var string4 = "hello\tworld"
+var string5 = "quote: \"hello\""
+var string6 = "backslash: \\"
+var string7 = "\101"
+var string8 = "\x41"
+var string9 = "\u0041"
+var string10 = "\U00000041"
+var string11 = "Omega: \u03A9"
+var string12 = "Smile: \U0001F600"
+
+
+// ---------- Raw strings ----------
+
+var raw1 = `hello`
+var raw2 = `hello\nworld`
+var raw3 = `C:\Users\Test\file.txt`
+var raw4 = `"hello"`
+var raw5 = `first line
+second line
+third line`
+
+var raw6 = `\t \n \x41 \u0041`
+
+
+// ---------- Идентификаторы ----------
+
+var identifier = 1
+var identifier123 = 2
+var _private = 3
+var rangeValue = 4
+var func123 = 5
+var breakfast = 6
+
+var αβ = 100
+
+
+// ---------- Арифметические операторы ----------
+
+var arithmetic = 10 + 20
+arithmetic = arithmetic - 5
+arithmetic = arithmetic * 2
+arithmetic = arithmetic / 3
+arithmetic = arithmetic % 4
+
+
+// ---------- Побитовые операторы ----------
+
+var bits = 10 & 3
+bits = 10 | 3
+bits = 10 ^ 3
+bits = 10 &^ 3
+
+
+// ---------- Сдвиги ----------
+
+var shift1 = 10 << 2
+var shift2 = 10 >> 2
+
+
+// ---------- Логические операторы ----------
+
+var logic1 = true && false
+var logic2 = true || false
+var logic3 = !true
+var logic4 = !false && true
+
+
+// ---------- Операторы сравнения ----------
+
+var compare1 = 10 == 20
+var compare2 = 10 != 20
+var compare3 = 10 < 20
+var compare4 = 10 <= 20
+var compare5 = 10 > 20
+var compare6 = 10 >= 20
+
+
+// ---------- Операторы присваивания ----------
+
+var assignment = 100
+
+assignment = 10
+assignment += 10
+assignment -= 10
+assignment *= 10
+assignment /= 10
+assignment %= 10
+assignment &= 10
+assignment |= 10
+assignment ^= 10
+assignment <<= 2
+assignment >>= 2
+assignment &^= 10
+
+
+// ---------- Короткое объявление ----------
+
+shortDeclaration := 123
+
+
+// ---------- Инкремент и декремент ----------
+
+shortDeclaration++
+shortDeclaration--
+
+
+// ---------- Скобки ----------
+
+var parentheses = (10 + 20)
+
+var array [3]int
+array[0] = 10
+array[1] = 20
+array[2] = 30
+
+
+// ---------- Пунктуация ----------
+
+fmt.Println(decimal, binary, hex)
+
+var object.field = 10
+
+func variadic(values ...int) {
+}
+
+
+// ---------- Канал ----------
+
+var channel chan int
+channel <- 10
+
+
+// ---------- Тильда ----------
+
+type Number interface {
+    ~int
+}
+
+
+// ---------- Однострочный комментарий ----------
+
+// hello world
+var afterComment = 123 // comment after token
+
+
+// ---------- Многострочный комментарий ----------
+
+/*
+    Это многострочный комментарий.
+
+    Всё внутри должно восприниматься как комментарий:
+
+    123
+    3.14
+    "hello"
+    a += b
+    a == b
+    a && b
+    αβ
+*/
+
+var afterBlockComment = 456
+
+
+// ---------- Управляющие конструкции и ключевые слова ----------
+
+func testFunction(value int) int {
+    if value > 100 {
+        return value
+    } else {
+        return 0
+    }
+}
+
+func loops() {
+    for i := 0; i < 10; i++ {
+        if i == 5 {
+            continue
+        }
+
+        if i == 8 {
+            break
+        }
+    }
+}
+
+func switchTest(value int) {
+    switch value {
+    case 1:
+        return
+    case 2:
+        fallthrough
+    default:
+        return
+    }
+}
+
+func rangeTest(values []int) {
+    for index := range values {
+        fmt.Println(index)
+    }
+}
+
+
+// ---------- Остальные ключевые слова ----------
+
+type Person struct {
+    value int
+}
+
+type Reader interface {
+}
+
+var mapping map[string]int
+
+var communication chan int
+
+func deferred() {
+    defer fmt.Println("defer")
+}
+
+func goroutine() {
+    go fmt.Println("go")
+}
+
+func gotoTest() {
+    goto finish
+
+finish:
+    return
+}
+
+func selectTest(ch chan int) {
+    select {
+    case value := <-ch:
+        fmt.Println(value)
+    default:
+        return
+    }
+}

@@ -1,0 +1,16 @@
+// one line comment
+
+a // comment after identifier
+
+/*
+multi
+line
+comment
+*/
+
+/* one line block comment */
+
+a /* comment */ b
+
+// symbols inside comment: + - * / == && :=
+// 123 3.14 "hello" αβ
