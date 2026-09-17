@@ -14,6 +14,9 @@ Buffer buffer;
 
 %}
 
+/* Состояние для многострочных комментариев */
+%x COMMENT
+
 /* ---------- Идентификаторы ---------- */
 
 LETTER          [A-Za-z_]
@@ -143,6 +146,79 @@ IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
     /* ---------- Перевод строки ---------- */
 \n {
 
+}
+
+    /* ---------- Однострочные комментарии ---------- */
+
+\/\/.* {
+    Logger::Value("COMMENT", string(yytext));
+}
+
+    /* ---------- Многострочные комментарии ---------- */
+"/*" {
+    BEGIN(COMMENT);
+    Logger::Value("COMMENT", "/*");
+}
+
+<COMMENT>"*/" {
+    BEGIN(INITIAL);
+    Logger::Value("COMMENT", "*/");
+}
+
+<COMMENT>[^*\n]+ {
+    Logger::Value("COMMENT", string(yytext));
+}
+
+<COMMENT>"*" {
+    Logger::Value("COMMENT", string(yytext));
+}
+
+<COMMENT>\n {
+    Logger::Value("PUNCTUATION", ";");
+
+}
+
+    /* ---------- Операторы присваивания ---------- */
+"="|"+="|"-="|"*="|"/="|"%="|"\&="|"\^="|"<<="|">>="|"\&^=" { 
+    Logger::Value("OPERATOR", string(yytext));  
+}
+
+    /* ---------- Короткое объявление ---------- */
+":=" { 
+    Logger::Value("OPERATOR", ":="); 
+}
+
+    /* ---------- Инкремент/декремент ---------- */
+"++"|"--" { 
+    Logger::Value("PUNCTUATION", string(yytext)); 
+}
+
+    /* ---------- Оператор канала ---------- */
+"<-" { 
+    Logger::Value("OPERATOR", "<-"); 
+}
+
+    /* ---------- Скобки ---------- */
+"(" { Logger::Value("PUNCTUATION", "("); }
+")" { Logger::Value("PUNCTUATION", ")"); }
+"[" { Logger::Value("PUNCTUATION", "["); }
+"]" { Logger::Value("PUNCTUATION", "]"); }
+"{" { Logger::Value("PUNCTUATION", "{"); }
+"}" { Logger::Value("PUNCTUATION", "}"); }
+
+    /* ---------- Пунктуация ---------- */
+","|":"|"."|"..." { 
+    Logger::Value("PUNCTUATION", string(yytext)); 
+}
+
+    /* ---------- Тильда ---------- */
+"~" { 
+    Logger::Value("OPERATOR", "~"); 
+}
+
+    /* ---------- Точка с запятой ---------- */
+";" {
+    Logger::Value("PUNCTUATION", ";");
 }
 
     /* ---------- Отлавливаем все остальное как ошибку ---------- */
