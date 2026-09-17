@@ -14,6 +14,11 @@ private:
     /// @return строка из которого удалены все _
     static string removeLowLines(const string& text);
 
+    /// @brief Декодирует escape символы в значение
+    /// @param value escape символ
+    /// @return восьмиричное число соответсвующее escape символу
+    static long long DecodeEscape(const string& text);
+
 public:
 
     /// @brief Преобразовывает строку в целочисленный тип данных

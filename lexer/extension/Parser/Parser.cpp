@@ -85,3 +85,30 @@ double Parser::Imaginary(const string& text) {
 
     return static_cast<double>(Integer(value)); // иначе целочисленный
 }
+long long Parser::DecodeEscape(const string& text) {
+    
+    // Если строка содержит всего два символа, то прогоняем ее из предопределенных последовательностей
+    if (text.size() == 2) {
+       
+        switch (text[1]) {
+            case 'a':  return '\a';
+            case 'b':  return '\b';
+            case 'f':  return '\f';
+            case 'n':  return '\n';
+            case 'r':  return '\r';
+            case 't':  return '\t';
+            case 'v':  return '\v';
+            case '\\': return '\\';
+            case '\'': return '\'';
+            case '"':  return '"';
+        }
+    
+    }
+
+    // если записано в шестнадцатиричной системе то расшифровываем
+    if (text[1] == 'x' || text[1] == 'u' || text[1] == 'U') {
+        return std::stoll(text.substr(2), nullptr, 16);
+    }
+
+    return std::stoll(text.substr(1), nullptr, 8); // читаем как восьмиричный
+}
