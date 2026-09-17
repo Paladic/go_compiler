@@ -644,6 +644,11 @@ STRING_CHAR         [^\\\"\n\r]
     autoSemi = false;
 }
 
+"|=" {
+    Logger::Value("OPERATOR", "|=");
+    autoSemi = false;
+}
+
 "^=" {
     Logger::Value("OPERATOR", "^=");
     autoSemi = false;
