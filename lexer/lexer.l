@@ -191,12 +191,39 @@ IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
     Logger::Token("LOGICAL_NOT");
 }
 
+    /* ---------- Операторы сравнения ---------- */
+
+"==" {
+    Logger::Token("EQUAL");
+}
+
+"!=" {
+    Logger::Token("NOT_EQUAL");
+}
+
+"<" {
+    Logger::Token("LESS");
+}
+
+"<=" {
+    Logger::Token("LESS_EQUAL");
+}
+
+">" {
+    Logger::Token("GREATER");
+}
+
+">=" {
+    Logger::Token("GREATER_EQUAL");
+}
+
+
+
     /* ---------- Идентификаторы ---------- */
 
 {IDENTIFIER} {
     Logger::Value("IDENTIFIER", string(yytext));
 }
-
 
 
     /* ---------- пробелы ---------- */
@@ -217,9 +244,7 @@ IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
     );
 }
 
-
 %%
-
 
 int main(void)
 {
