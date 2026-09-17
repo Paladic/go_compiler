@@ -4,6 +4,8 @@
 
 // глобальные переменные, бибилотеки, функции и т.д.
 
+#include <cstdio>
+#include <iostream>
 #include <string>
 #include "extension/logger/logger.h"
 #include "extension/Parser/Parser.h"
@@ -17,8 +19,11 @@ using std::string;
 /* буфер где будем хранить текст для строковых литералов */
 Buffer buffer;
 
+/* флаг проверки на корректность строковых литералов */
+bool stringInvalid = false;
+
 /* Флаг автоматической вставки точки с запятой */
-bool auto_semi = false;
+bool autoSemi = false;
 
 %}
 
@@ -104,103 +109,128 @@ STRING_CHAR         [^\\\"\n\r]
     /* ---------- Ключевые слова ---------- */
 
 "break" {
-    Logger::Token("BREAK"); auto_semi = true;
+    Logger::Token("BREAK");
+    autoSemi = true;
 }
 
 "default" {
-    Logger::Token("DEFAULT"); auto_semi = false;
+    Logger::Token("DEFAULT");
+    autoSemi = false;
 }
 
 "func" {
-    Logger::Token("FUNC"); auto_semi = false;
+    Logger::Token("FUNC");
+    autoSemi = false;
 }
 
 "interface" {
-    Logger::Token("INTERFACE"); auto_semi = false;
+    Logger::Token("INTERFACE");
+    autoSemi = false;
 }
 
 "select" {
-    Logger::Token("SELECT"); auto_semi = false;
+    Logger::Token("SELECT");
+    autoSemi = false;
 }
 
 "case" {
-    Logger::Token("CASE"); auto_semi = false;
+    Logger::Token("CASE");
+    autoSemi = false;
 }
 
 "defer" {
-    Logger::Token("DEFER"); auto_semi = false;
+    Logger::Token("DEFER");
+    autoSemi = false;
 }
 
 "go" {
-    Logger::Token("GO"); auto_semi = false;
+    Logger::Token("GO");
+    autoSemi = false;
 }
 
 "map" {
-    Logger::Token("MAP"); auto_semi = false;
+    Logger::Token("MAP");
+    autoSemi = false;
 }
 
 "struct" {
-    Logger::Token("STRUCT"); auto_semi = false;
+    Logger::Token("STRUCT");
+    autoSemi = false;
 }
 
 "chan" {
-    Logger::Token("CHAN"); auto_semi = false;
+    Logger::Token("CHAN");
+    autoSemi = false;
 }
 
 "else" {
-    Logger::Token("ELSE"); auto_semi = false;
+    Logger::Token("ELSE");
+    autoSemi = false;
 }
 
 "goto" {
-    Logger::Token("GOTO"); auto_semi = false;
+    Logger::Token("GOTO");
+    autoSemi = false;
 }
 
 "package" {
-    Logger::Token("PACKAGE"); auto_semi = false;
+    Logger::Token("PACKAGE");
+    autoSemi = false;
 }
 
 "switch" {
-    Logger::Token("SWITCH"); auto_semi = false;
+    Logger::Token("SWITCH");
+    autoSemi = false;
 }
 
 "const" {
-    Logger::Token("CONST"); auto_semi = false;
+    Logger::Token("CONST");
+    autoSemi = false;
 }
 
 "fallthrough" {
-    Logger::Token("FALLTHROUGH"); auto_semi = true;
+    Logger::Token("FALLTHROUGH");
+    autoSemi = true;
 }
 
 "if" {
-    Logger::Token("IF"); auto_semi = false;
+    Logger::Token("IF");
+    autoSemi = false;
 }
 
 "range" {
-    Logger::Token("RANGE"); auto_semi = false;
+    Logger::Token("RANGE");
+    autoSemi = false;
 }
 
 "type" {
-    Logger::Token("TYPE"); auto_semi = false;
+    Logger::Token("TYPE");
+    autoSemi = false;
 }
 
 "continue" {
-    Logger::Token("CONTINUE"); auto_semi = true;
+    Logger::Token("CONTINUE");
+    autoSemi = true;
 }
 
 "for" {
-    Logger::Token("FOR"); auto_semi = false;
+    Logger::Token("FOR");
+    autoSemi = false;
 }
 
 "import" {
-    Logger::Token("IMPORT"); auto_semi = false;
+    Logger::Token("IMPORT");
+    autoSemi = false;
 }
 
 "return" {
-    Logger::Token("RETURN"); auto_semi = true;
+    Logger::Token("RETURN");
+    autoSemi = true;
 }
 
 "var" {
-    Logger::Token("VAR"); auto_semi = false;
+    Logger::Token("VAR");
+    autoSemi = false;
 }
 
     /* ---------- Мнимые литералы ---------- */
@@ -210,6 +240,8 @@ STRING_CHAR         [^\\\"\n\r]
         "IMAGINARY_LITERAL",
         Parser::Imaginary(yytext)
     );
+
+    autoSemi = true;
 }
 
     /* ---------- Литералы с плавающей точкой ---------- */
@@ -219,6 +251,8 @@ STRING_CHAR         [^\\\"\n\r]
         "HEX_FLOAT_LITERAL",
         Parser::Float(yytext)
     );
+
+    autoSemi = true;
 }
 
 {DECIMAL_FLOAT} {
@@ -226,6 +260,8 @@ STRING_CHAR         [^\\\"\n\r]
         "FLOAT_LITERAL",
         Parser::Float(yytext)
     );
+
+    autoSemi = true;
 }
 
 
@@ -236,6 +272,8 @@ STRING_CHAR         [^\\\"\n\r]
         "BINARY_LITERAL",
         Parser::Integer(yytext)
     );
+
+    autoSemi = true;
 }
 
 {OCTAL_LITERAL} {
@@ -243,6 +281,8 @@ STRING_CHAR         [^\\\"\n\r]
         "OCTAL_LITERAL",
         Parser::Integer(yytext)
     );
+
+    autoSemi = true;
 }
 
 {OLD_OCTAL_LITERAL} {
@@ -250,6 +290,8 @@ STRING_CHAR         [^\\\"\n\r]
         "OCTAL_LITERAL",
         Parser::Integer(yytext)
     );
+
+    autoSemi = true;
 }
 
 {HEX_LITERAL} {
@@ -257,6 +299,8 @@ STRING_CHAR         [^\\\"\n\r]
         "HEX_LITERAL",
         Parser::Integer(yytext)
     );
+
+    autoSemi = true;
 }
 
 {DECIMAL_LITERAL} {
@@ -264,6 +308,10 @@ STRING_CHAR         [^\\\"\n\r]
         "DECIMAL_LITERAL",
         Parser::Integer(yytext)
     );
+
+    autoSemi = true;
+}
+
     /* ---------- Символьные литералы ---------- */
 
 {RUNE_LITERAL} {
@@ -272,6 +320,7 @@ STRING_CHAR         [^\\\"\n\r]
         Parser::Rune(yytext)
     );
 
+    autoSemi = true;
 }
 
 \'[^'\n\r]*\' {
@@ -280,7 +329,9 @@ STRING_CHAR         [^\\\"\n\r]
         "' at line " + std::to_string(yylineno)
     );
 
+    autoSemi = false;
 }
+
     /* ---------- Стороковые литералы ---------- */
 
 \" {
@@ -314,8 +365,10 @@ STRING_CHAR         [^\\\"\n\r]
             buffer.Get()
         );
 
+        autoSemi = true;
     }
     else {
+        autoSemi = false;
     }
 
     BEGIN(INITIAL);
@@ -328,6 +381,7 @@ STRING_CHAR         [^\\\"\n\r]
     );
 
     buffer.Reset(yylineno);
+    autoSemi = false;
 
     BEGIN(INITIAL);
 }
@@ -366,6 +420,7 @@ STRING_CHAR         [^\\\"\n\r]
         buffer.Get()
     );
 
+    autoSemi = true;
 
     BEGIN(INITIAL);
 }
@@ -384,98 +439,121 @@ STRING_CHAR         [^\\\"\n\r]
 
 "+" {
     Logger::Token("PLUS");
+    autoSemi = false;
 }
 
 "-" {
     Logger::Token("MINUS");
+    autoSemi = false;
 }
 
 "*" {
     Logger::Token("MULTIPLY");
+    autoSemi = false;
 }
 
 "/" {
     Logger::Token("DIVIDE");
+    autoSemi = false;
 }
 
 "%" {
     Logger::Token("MODULO");
+    autoSemi = false;
 }
 
     /* ---------- Побитовые операторы ---------- */
 
 "&" {
     Logger::Token("BIT_AND");
+    autoSemi = false;
 }
 
 "|" {
     Logger::Token("BIT_OR");
+    autoSemi = false;
 }
 
 "^" {
     Logger::Token("BIT_XOR");
+    autoSemi = false;
 }
 
 "&^" {
     Logger::Token("BIT_CLEAR");
+    autoSemi = false;
 }
 
     /* ---------- Операторы сдвига ---------- */
 
 "<<" {
     Logger::Token("LEFT_SHIFT");
+    autoSemi = false;
 }
 
 ">>" {
     Logger::Token("RIGHT_SHIFT");
+    autoSemi = false;
 }
 
     /* ---------- Логические операторы ---------- */
 
 "&&" {
     Logger::Token("LOGICAL_AND");
+    autoSemi = false;
 }
 
 "||" {
     Logger::Token("LOGICAL_OR");
+    autoSemi = false;
 }
 
 "!" {
     Logger::Token("LOGICAL_NOT");
+    autoSemi = false;
 }
 
     /* ---------- Операторы сравнения ---------- */
 
 "==" {
     Logger::Token("EQUAL");
+    autoSemi = false;
 }
 
 "!=" {
     Logger::Token("NOT_EQUAL");
+    autoSemi = false;
 }
 
 "<" {
     Logger::Token("LESS");
+    autoSemi = false;
 }
 
 "<=" {
     Logger::Token("LESS_EQUAL");
+    autoSemi = false;
 }
 
 ">" {
     Logger::Token("GREATER");
+    autoSemi = false;
 }
 
 ">=" {
     Logger::Token("GREATER_EQUAL");
+    autoSemi = false;
 }
-
-
 
     /* ---------- Идентификаторы ---------- */
 
 {IDENTIFIER} {
-    Logger::Value("IDENTIFIER", string(yytext)); auto_semi = true;
+    Logger::Value(
+        "IDENTIFIER",
+        string(yytext)
+    );
+
+    autoSemi = true;
 }
 
 
@@ -486,9 +564,9 @@ STRING_CHAR         [^\\\"\n\r]
 
     /* ---------- Перевод строки ---------- */
 \n {
-    if (auto_semi) {
+    if (autoSemi) {
         Logger::Value("PUNCTUATION", ";");
-        auto_semi = false;
+        autoSemi = false;
     }
 }
 
@@ -518,116 +596,177 @@ STRING_CHAR         [^\\\"\n\r]
 }
 
 <COMMENT>\n {
-    if (auto_semi){
-    Logger::Value("PUNCTUATION", ";");
-    auto_semi = false;
-    }
 }
 
 <COMMENT><<EOF>> {
     Logger::Error(
-        "Незакрытый многострочный комментарий на строке " + std::to_string(yylineno)
+        "Unclosed multi-line comment on line " +
+        std::to_string(yylineno)
     );
-    return 0;
+
+    yyterminate();
 }
 
     /* ---------- Операторы присваивания ---------- */
-"=" { 
-    Logger::Value("OPERATOR", "="); auto_semi = false;
+
+"=" {
+    Logger::Value("OPERATOR", "=");
+    autoSemi = false;
 }
 
-"+=" { 
-    Logger::Value("OPERATOR", "+="); auto_semi = false;
+"+=" {
+    Logger::Value("OPERATOR", "+=");
+    autoSemi = false;
 }
 
-"-=" { 
-    Logger::Value("OPERATOR", "-="); auto_semi = false;
+"-=" {
+    Logger::Value("OPERATOR", "-=");
+    autoSemi = false;
 }
 
-"*=" { 
-    Logger::Value("OPERATOR", "*="); auto_semi = false;
+"*=" {
+    Logger::Value("OPERATOR", "*=");
+    autoSemi = false;
 }
 
-"/=" { 
-    Logger::Value("OPERATOR", "/="); auto_semi = false;
+"/=" {
+    Logger::Value("OPERATOR", "/=");
+    autoSemi = false;
 }
 
-"%=" { 
-    Logger::Value("OPERATOR", "%="); auto_semi = false;
+"%=" {
+    Logger::Value("OPERATOR", "%=");
+    autoSemi = false;
 }
 
-"&=" { 
-    Logger::Value("OPERATOR", "&="); auto_semi = false;
+"&=" {
+    Logger::Value("OPERATOR", "&=");
+    autoSemi = false;
 }
 
-"^=" { 
-    Logger::Value("OPERATOR", "^="); auto_semi = false;
+"^=" {
+    Logger::Value("OPERATOR", "^=");
+    autoSemi = false;
 }
 
-"<<=" { 
-    Logger::Value("OPERATOR", "<<="); auto_semi = false;
+"<<=" {
+    Logger::Value("OPERATOR", "<<=");
+    autoSemi = false;
 }
 
-">>=" { 
-    Logger::Value("OPERATOR", ">>="); auto_semi = false;
+">>=" {
+    Logger::Value("OPERATOR", ">>=");
+    autoSemi = false;
 }
 
-"&^=" { 
-    Logger::Value("OPERATOR", "&^="); auto_semi = false;
+"&^=" {
+    Logger::Value("OPERATOR", "&^=");
+    autoSemi = false;
 }
 
     /* ---------- Короткое объявление ---------- */
-":=" { 
-    Logger::Value("OPERATOR", ":="); auto_semi = false;
+
+":=" {
+    Logger::Value("OPERATOR", ":=");
+    autoSemi = false;
 }
 
-    /* ---------- Инкремент/декремент ---------- */
-"++" { 
-    Logger::Value("OPERATOR", "++"); auto_semi = true;
+
+    /* ---------- Инкремент / декремент ---------- */
+
+"++" {
+    Logger::Value("OPERATOR", "++");
+    autoSemi = true;
 }
 
-"--" { 
-    Logger::Value("OPERATOR", "--"); auto_semi = true;
+"--" {
+    Logger::Value("OPERATOR", "--");
+    autoSemi = true;
 }
 
     /* ---------- Оператор канала ---------- */
-"<-" { 
-    Logger::Value("OPERATOR", "<-"); auto_semi = false;
+
+"<-" {
+    Logger::Value("OPERATOR", "<-");
+    autoSemi = false;
 }
 
     /* ---------- Скобки ---------- */
-"(" { Logger::Value("PUNCTUATION", "("); auto_semi = false; }
-")" { Logger::Value("PUNCTUATION", ")"); auto_semi = true; }
-"[" { Logger::Value("PUNCTUATION", "["); auto_semi = false; }
-"]" { Logger::Value("PUNCTUATION", "]"); auto_semi = true; }
-"{" { Logger::Value("PUNCTUATION", "{"); auto_semi = false; }
-"}" { Logger::Value("PUNCTUATION", "}"); auto_semi = true; }
+
+"(" {
+    Logger::Value("PUNCTUATION", "(");
+    autoSemi = false;
+}
+
+")" {
+    Logger::Value("PUNCTUATION", ")");
+    autoSemi = true;
+}
+
+"[" {
+    Logger::Value("PUNCTUATION", "[");
+    autoSemi = false;
+}
+
+"]" {
+    Logger::Value("PUNCTUATION", "]");
+    autoSemi = true;
+}
+
+"{" {
+    Logger::Value("PUNCTUATION", "{");
+    autoSemi = false;
+}
+
+"}" {
+    Logger::Value("PUNCTUATION", "}");
+    autoSemi = true;
+}
+
 
     /* ---------- Пунктуация ---------- */
-"," { 
-    Logger::Value("PUNCTUATION", ","); auto_semi = false; 
+
+"," {
+    Logger::Value("PUNCTUATION", ",");
+    autoSemi = false;
 }
 
-":" { 
-    Logger::Value("PUNCTUATION", ":"); auto_semi = false; 
+":" {
+    Logger::Value("PUNCTUATION", ":");
+    autoSemi = false;
 }
 
-"." { 
-    Logger::Value("PUNCTUATION", "."); auto_semi = false; 
+"." {
+    Logger::Value("PUNCTUATION", ".");
+    autoSemi = false;
 }
 
-"..." { 
-    Logger::Value("PUNCTUATION", "..."); auto_semi = false; 
+"..." {
+    Logger::Value("PUNCTUATION", "...");
+    autoSemi = false;
 }
 
     /* ---------- Тильда ---------- */
-"~" { 
-    Logger::Value("OPERATOR", "~"); auto_semi = false;
+
+"~" {
+    Logger::Value("OPERATOR", "~");
+    autoSemi = false;
 }
 
     /* ---------- Точка с запятой ---------- */
 ";" {
-    Logger::Value("PUNCTUATION", ";"); auto_semi = false;
+    Logger::Value("PUNCTUATION", ";");
+    autoSemi = false;
+}
+
+    /* если файл закончился после токена, а мы должны были вставить ;, то вставляем */
+<<EOF>> {
+    if (autoSemi) {
+        Logger::Value("PUNCTUATION", ";");
+        autoSemi = false;
+    }
+
+    yyterminate();
 }
 
     /* ---------- Отлавливаем все остальное как ошибку ---------- */
@@ -659,10 +798,12 @@ int main(int argc, char* argv[])
             return 1;
         }
     }
+
     yylex();
 
     if (argc > 1) {
         fclose(yyin);
     }
+
     return 0;
 }
