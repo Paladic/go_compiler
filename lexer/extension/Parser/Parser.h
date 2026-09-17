@@ -21,6 +21,11 @@ public:
     /// @return целое число
     static long long Integer(const string& text);
     
+    /// @brief Преобразовывает строку в тип данных с плавающей точкой
+    /// @param text строка 
+    /// @return число с плавающей точкой
+    static double Float(const string& text);
+    
 };
 
 #endif

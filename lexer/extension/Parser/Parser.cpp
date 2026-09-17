@@ -46,6 +46,14 @@ long long Parser::Integer(const string& text) {
 
     return std::stoll(value.substr(start), nullptr, base);
 }
+
+double Parser::Float(const string& text) {
+    
+    string value = removeLowLines(text); // удаляем _
+    return std::stod(value); // приводим к числу
+
+}
+
 string Parser::removeLowLines(const string& text) {
 
     string value;
