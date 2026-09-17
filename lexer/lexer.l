@@ -127,6 +127,28 @@ IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
     Logger::Token("VAR");
 }
 
+    /* ---------- Арифметические операторы ---------- */
+
+"+" {
+    Logger::Token("PLUS");
+}
+
+"-" {
+    Logger::Token("MINUS");
+}
+
+"*" {
+    Logger::Token("MULTIPLY");
+}
+
+"/" {
+    Logger::Token("DIVIDE");
+}
+
+"%" {
+    Logger::Token("MODULO");
+}
+
     /* ---------- Идентификаторы ---------- */
 
 {IDENTIFIER} {
