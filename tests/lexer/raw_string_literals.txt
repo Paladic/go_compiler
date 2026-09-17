@@ -1,0 +1,15 @@
+`hello`
+
+`hello world`
+
+`hello\nworld`
+
+`C:\Users\Test\file.txt`
+
+`"hello"`
+
+`first line
+second line
+third line`
+
+`\t \n \x41 \u0041`
