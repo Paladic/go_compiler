@@ -8,12 +8,22 @@
 #include "extension/logger/logger.h"
 #include "extension/Parser/Parser.h"
 #include "extension/buffer/Buffer.h"
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 using std::string;
 
+/* буфер где будем хранить текст для строковых литералов */
 Buffer buffer;
 
 %}
+
+/* состояние для строк */
+%x STRING
+
+/* состояние для строк которые не обрабатываются */
+%x RAW_STRING
 
 /* ---------- Идентификаторы ---------- */
 
@@ -53,6 +63,23 @@ HEX_FLOAT           0[xX]_?{HEX_MANTISSA}{BINARY_EXPONENT}
 /* ---------- Мнимые литералы ---------- */
 
 IMAGINARY_LITERAL   ({DECIMAL_LITERAL}|{BINARY_LITERAL}|{OCTAL_LITERAL}|{OLD_OCTAL_LITERAL}|{HEX_LITERAL}|{DECIMAL_FLOAT}|{HEX_FLOAT})i
+
+/* ---------- Символьные литералы  ---------- */
+
+OCTAL_BYTE_ESCAPE   \\[0-7]{3}
+HEX_BYTE_ESCAPE     \\x[0-9a-fA-F]{2}
+UNICODE_4_ESCAPE    \\u[0-9a-fA-F]{4}
+UNICODE_8_ESCAPE    \\U[0-9a-fA-F]{8}
+
+RUNE_ESCAPE         (\\[abfnrtv\\']|{OCTAL_BYTE_ESCAPE}|{HEX_BYTE_ESCAPE}|{UNICODE_4_ESCAPE}|{UNICODE_8_ESCAPE})
+RUNE_CHAR           [^\\'\n\r]
+
+RUNE_LITERAL        \'({RUNE_CHAR}|{RUNE_ESCAPE})\'
+
+/* ---------- Стороковые литералы  ---------- */
+
+STRING_ESCAPE       (\\[abfnrtv\\"]|{OCTAL_BYTE_ESCAPE}|{HEX_BYTE_ESCAPE}|{UNICODE_4_ESCAPE}|{UNICODE_8_ESCAPE})
+STRING_CHAR         [^\\\"\n\r]
 
 %%
 
@@ -221,6 +248,120 @@ IMAGINARY_LITERAL   ({DECIMAL_LITERAL}|{BINARY_LITERAL}|{OCTAL_LITERAL}|{OLD_OCT
         "DECIMAL_LITERAL",
         Parser::Integer(yytext)
     );
+    /* ---------- Символьные литералы ---------- */
+
+{RUNE_LITERAL} {
+    Logger::Value(
+        "RUNE_LITERAL",
+        Parser::Rune(yytext)
+    );
+
+}
+
+\'[^'\n\r]*\' {
+    Logger::Error(
+        "Invalid rune literal '" + string(yytext) +
+        "' at line " + std::to_string(yylineno)
+    );
+
+}
+    /* ---------- Стороковые литералы ---------- */
+
+\" {
+    buffer.Reset(yylineno);
+    stringInvalid = false;
+    BEGIN(STRING);
+}
+
+<STRING>{STRING_CHAR}+ {
+    buffer.Append(yytext);
+}
+
+<STRING>{STRING_ESCAPE} {
+    buffer.Append(Parser::EscapeToString(yytext));
+}
+
+<STRING>\\. {
+    Logger::Error(
+        "Invalid escape sequence '" + string(yytext) +
+        "' at line " + std::to_string(yylineno)
+    );
+
+    stringInvalid = true;
+}
+
+<STRING>\" {
+   
+   if (!stringInvalid) {
+        Logger::Value(
+            "STRING_LITERAL",
+            buffer.Get()
+        );
+
+    }
+    else {
+    }
+
+    BEGIN(INITIAL);
+}
+
+<STRING>\n {
+    Logger::Error(
+        "Unclosed string literal at line " +
+        std::to_string(buffer.GetStartLine())
+    );
+
+    buffer.Reset(yylineno);
+
+    BEGIN(INITIAL);
+}
+
+<STRING><<EOF>> {
+    Logger::Error(
+        "Unclosed string literal at line " +
+        std::to_string(buffer.GetStartLine())
+    );
+
+    yyterminate();
+}
+
+    /* ---------- Необработавыаемые строковые литералы ---------- */
+
+` {
+    buffer.Reset(yylineno);
+    BEGIN(RAW_STRING);
+}
+
+<RAW_STRING>[^`\r\n]+ {
+    buffer.Append(yytext);
+}
+
+<RAW_STRING>\n {
+    buffer.Append("\n");
+}
+
+<RAW_STRING>\r {
+    /* удаляется из необратавыемых строк */
+}
+
+<RAW_STRING>` {
+    Logger::Value(
+        "RAW_STRING_LITERAL",
+        buffer.Get()
+    );
+
+
+    BEGIN(INITIAL);
+}
+
+
+<RAW_STRING><<EOF>> {
+    Logger::Error(
+        "Unclosed raw string literal at line " +
+        std::to_string(buffer.GetStartLine())
+    );
+
+    yyterminate();
 }
 
     /* ---------- Арифметические операторы ---------- */
@@ -344,6 +485,11 @@ IMAGINARY_LITERAL   ({DECIMAL_LITERAL}|{BINARY_LITERAL}|{OCTAL_LITERAL}|{OLD_OCT
 
 int main(void)
 {
+
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
     yylex();
     return 0;
 }
