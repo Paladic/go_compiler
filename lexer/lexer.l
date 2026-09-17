@@ -40,6 +40,16 @@ OCTAL_LITERAL       0[oO]_?{OCTAL_DIGITS}
 OLD_OCTAL_LITERAL   0_?{OCTAL_DIGITS}
 HEX_LITERAL         0[xX]_?{HEX_DIGITS}
 
+/* ---------- Литералы с плавающей точкой ---------- */
+
+DECIMAL_EXPONENT    [eE][+-]?{DECIMAL_DIGITS}
+BINARY_EXPONENT     [pP][+-]?{DECIMAL_DIGITS}
+
+DECIMAL_FLOAT       ({DECIMAL_DIGITS}"."{DECIMAL_DIGITS}?{DECIMAL_EXPONENT}?)|({DECIMAL_DIGITS}{DECIMAL_EXPONENT})|("."{DECIMAL_DIGITS}{DECIMAL_EXPONENT}?)
+
+HEX_MANTISSA        (({HEX_DIGITS}"."{HEX_DIGITS}?)|({HEX_DIGITS})|("."{HEX_DIGITS}))
+HEX_FLOAT           0[xX]_?{HEX_MANTISSA}{BINARY_EXPONENT}
+
 %%
 
     /* Комментари внутри этого блока пишутся вот в этом синтаксесе и обязательно перед комментаривем табуляцию */
@@ -144,6 +154,22 @@ HEX_LITERAL         0[xX]_?{HEX_DIGITS}
 
 "var" {
     Logger::Token("VAR");
+}
+
+    /* ---------- Литералы с плавающей точкой ---------- */
+
+{HEX_FLOAT} {
+    Logger::Value(
+        "HEX_FLOAT_LITERAL",
+        Parser::Float(yytext)
+    );
+}
+
+{DECIMAL_FLOAT} {
+    Logger::Value(
+        "FLOAT_LITERAL",
+        Parser::Float(yytext)
+    );
 }
 
 
