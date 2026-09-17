@@ -17,6 +17,9 @@ using std::string;
 /* буфер где будем хранить текст для строковых литералов */
 Buffer buffer;
 
+/* Флаг автоматической вставки точки с запятой */
+bool auto_semi = false;
+
 %}
 
 /* состояние для строк */
@@ -24,6 +27,8 @@ Buffer buffer;
 
 /* состояние для строк которые не обрабатываются */
 %x RAW_STRING
+/* Состояние для многострочных комментариев */
+%x COMMENT
 
 /* ---------- Идентификаторы ---------- */
 
@@ -88,103 +93,103 @@ STRING_CHAR         [^\\\"\n\r]
     /* ---------- Ключевые слова ---------- */
 
 "break" {
-    Logger::Token("BREAK");
+    Logger::Token("BREAK"); auto_semi = true;
 }
 
 "default" {
-    Logger::Token("DEFAULT");
+    Logger::Token("DEFAULT"); auto_semi = false;
 }
 
 "func" {
-    Logger::Token("FUNC");
+    Logger::Token("FUNC"); auto_semi = false;
 }
 
 "interface" {
-    Logger::Token("INTERFACE");
+    Logger::Token("INTERFACE"); auto_semi = false;
 }
 
 "select" {
-    Logger::Token("SELECT");
+    Logger::Token("SELECT"); auto_semi = false;
 }
 
 "case" {
-    Logger::Token("CASE");
+    Logger::Token("CASE"); auto_semi = false;
 }
 
 "defer" {
-    Logger::Token("DEFER");
+    Logger::Token("DEFER"); auto_semi = false;
 }
 
 "go" {
-    Logger::Token("GO");
+    Logger::Token("GO"); auto_semi = false;
 }
 
 "map" {
-    Logger::Token("MAP");
+    Logger::Token("MAP"); auto_semi = false;
 }
 
 "struct" {
-    Logger::Token("STRUCT");
+    Logger::Token("STRUCT"); auto_semi = false;
 }
 
 "chan" {
-    Logger::Token("CHAN");
+    Logger::Token("CHAN"); auto_semi = false;
 }
 
 "else" {
-    Logger::Token("ELSE");
+    Logger::Token("ELSE"); auto_semi = false;
 }
 
 "goto" {
-    Logger::Token("GOTO");
+    Logger::Token("GOTO"); auto_semi = false;
 }
 
 "package" {
-    Logger::Token("PACKAGE");
+    Logger::Token("PACKAGE"); auto_semi = false;
 }
 
 "switch" {
-    Logger::Token("SWITCH");
+    Logger::Token("SWITCH"); auto_semi = false;
 }
 
 "const" {
-    Logger::Token("CONST");
+    Logger::Token("CONST"); auto_semi = false;
 }
 
 "fallthrough" {
-    Logger::Token("FALLTHROUGH");
+    Logger::Token("FALLTHROUGH"); auto_semi = true;
 }
 
 "if" {
-    Logger::Token("IF");
+    Logger::Token("IF"); auto_semi = false;
 }
 
 "range" {
-    Logger::Token("RANGE");
+    Logger::Token("RANGE"); auto_semi = false;
 }
 
 "type" {
-    Logger::Token("TYPE");
+    Logger::Token("TYPE"); auto_semi = false;
 }
 
 "continue" {
-    Logger::Token("CONTINUE");
+    Logger::Token("CONTINUE"); auto_semi = true;
 }
 
 "for" {
-    Logger::Token("FOR");
+    Logger::Token("FOR"); auto_semi = false;
 }
 
 "import" {
-    Logger::Token("IMPORT");
+    Logger::Token("IMPORT"); auto_semi = false;
 }
 
 "return" {
-    Logger::Token("RETURN");
+    Logger::Token("RETURN"); auto_semi = true;
 }
 
 "var" {
-    Logger::Token("VAR");
+    Logger::Token("VAR"); auto_semi = false;
 }
 
     /* ---------- Мнимые литералы ---------- */
@@ -459,7 +464,7 @@ STRING_CHAR         [^\\\"\n\r]
     /* ---------- Идентификаторы ---------- */
 
 {IDENTIFIER} {
-    Logger::Value("IDENTIFIER", string(yytext));
+    Logger::Value("IDENTIFIER", string(yytext)); auto_semi = true;
 }
 
 
@@ -470,7 +475,148 @@ STRING_CHAR         [^\\\"\n\r]
 
     /* ---------- Перевод строки ---------- */
 \n {
+    if (auto_semi) {
+        Logger::Value("PUNCTUATION", ";");
+        auto_semi = false;
+    }
+}
 
+    /* ---------- Однострочные комментарии ---------- */
+
+\/\/.* {
+    Logger::Value("COMMENT", string(yytext));
+}
+
+    /* ---------- Многострочные комментарии ---------- */
+"/*" {
+    BEGIN(COMMENT);
+    Logger::Value("COMMENT", "/*");
+}
+
+<COMMENT>"*/" {
+    BEGIN(INITIAL);
+    Logger::Value("COMMENT", "*/");
+}
+
+<COMMENT>[^*\n]+ {
+    Logger::Value("COMMENT", string(yytext));
+}
+
+<COMMENT>"*" {
+    Logger::Value("COMMENT", string(yytext));
+}
+
+<COMMENT>\n {
+    if (auto_semi){
+    Logger::Value("PUNCTUATION", ";");
+    auto_semi = false;
+    }
+}
+
+<COMMENT><<EOF>> {
+    Logger::Error(
+        "Незакрытый многострочный комментарий на строке " + std::to_string(yylineno)
+    );
+    return 0;
+}
+
+    /* ---------- Операторы присваивания ---------- */
+"=" { 
+    Logger::Value("OPERATOR", "="); auto_semi = false;
+}
+
+"+=" { 
+    Logger::Value("OPERATOR", "+="); auto_semi = false;
+}
+
+"-=" { 
+    Logger::Value("OPERATOR", "-="); auto_semi = false;
+}
+
+"*=" { 
+    Logger::Value("OPERATOR", "*="); auto_semi = false;
+}
+
+"/=" { 
+    Logger::Value("OPERATOR", "/="); auto_semi = false;
+}
+
+"%=" { 
+    Logger::Value("OPERATOR", "%="); auto_semi = false;
+}
+
+"&=" { 
+    Logger::Value("OPERATOR", "&="); auto_semi = false;
+}
+
+"^=" { 
+    Logger::Value("OPERATOR", "^="); auto_semi = false;
+}
+
+"<<=" { 
+    Logger::Value("OPERATOR", "<<="); auto_semi = false;
+}
+
+">>=" { 
+    Logger::Value("OPERATOR", ">>="); auto_semi = false;
+}
+
+"&^=" { 
+    Logger::Value("OPERATOR", "&^="); auto_semi = false;
+}
+
+    /* ---------- Короткое объявление ---------- */
+":=" { 
+    Logger::Value("OPERATOR", ":="); auto_semi = false;
+}
+
+    /* ---------- Инкремент/декремент ---------- */
+"++" { 
+    Logger::Value("OPERATOR", "++"); auto_semi = true;
+}
+
+"--" { 
+    Logger::Value("OPERATOR", "--"); auto_semi = true;
+}
+
+    /* ---------- Оператор канала ---------- */
+"<-" { 
+    Logger::Value("OPERATOR", "<-"); auto_semi = false;
+}
+
+    /* ---------- Скобки ---------- */
+"(" { Logger::Value("PUNCTUATION", "("); auto_semi = false; }
+")" { Logger::Value("PUNCTUATION", ")"); auto_semi = true; }
+"[" { Logger::Value("PUNCTUATION", "["); auto_semi = false; }
+"]" { Logger::Value("PUNCTUATION", "]"); auto_semi = true; }
+"{" { Logger::Value("PUNCTUATION", "{"); auto_semi = false; }
+"}" { Logger::Value("PUNCTUATION", "}"); auto_semi = true; }
+
+    /* ---------- Пунктуация ---------- */
+"," { 
+    Logger::Value("PUNCTUATION", ","); auto_semi = false; 
+}
+
+":" { 
+    Logger::Value("PUNCTUATION", ":"); auto_semi = false; 
+}
+
+"." { 
+    Logger::Value("PUNCTUATION", "."); auto_semi = false; 
+}
+
+"..." { 
+    Logger::Value("PUNCTUATION", "..."); auto_semi = false; 
+}
+
+    /* ---------- Тильда ---------- */
+"~" { 
+    Logger::Value("OPERATOR", "~"); auto_semi = false;
+}
+
+    /* ---------- Точка с запятой ---------- */
+";" {
+    Logger::Value("PUNCTUATION", ";"); auto_semi = false;
 }
 
     /* ---------- Отлавливаем все остальное как ошибку ---------- */
