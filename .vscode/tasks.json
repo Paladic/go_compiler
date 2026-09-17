@@ -21,7 +21,7 @@
         {
             "label": "Test all lexer",
             "type": "shell",
-            "command": "Get-ChildItem tests\\lexer\\*.txt | ForEach-Object { Write-Host \"`n=== $($_.Name) ===\"; Get-Content $_.FullName | .\\lexer\\lexer.exe }",
+            "command": "Get-ChildItem tests\\lexer\\*.txt | ForEach-Object { Write-Host \"`n=== $($_.Name) ===\"; .\\lexer\\lexer.exe $_.FullName }",
             "dependsOn": "Build lexer",
             "problemMatcher": []
         }

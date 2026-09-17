@@ -32,8 +32,19 @@ bool auto_semi = false;
 
 /* ---------- Идентификаторы ---------- */
 
-LETTER          [A-Za-z_]
-DIGIT           [0-9]
+ASCII_LETTER    [A-Za-z_]
+ASCII_DIGIT     [0-9]
+
+UTF8_CONT       [\200-\277]
+UTF8_2          [\302-\337]{UTF8_CONT}
+UTF8_3          [\340-\357]{UTF8_CONT}{UTF8_CONT}
+UTF8_4          [\360-\364]{UTF8_CONT}{UTF8_CONT}{UTF8_CONT}
+
+UTF8_CHAR       ({UTF8_2}|{UTF8_3}|{UTF8_4})
+
+LETTER          ({ASCII_LETTER}|{UTF8_CHAR})
+DIGIT           {ASCII_DIGIT}
+
 IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
 
 

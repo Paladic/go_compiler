@@ -1,0 +1,18 @@
+package main
+
+var a = 10
+var b = 3.14
+var c = 10i
+var d = 'a'
+var e = "hello"
+var f = `world`
+
+a++
+b--
+
+a = a +
+    b
+
+if a > b {
+    return
+}
