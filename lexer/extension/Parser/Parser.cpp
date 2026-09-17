@@ -85,6 +85,18 @@ double Parser::Imaginary(const string& text) {
 
     return static_cast<double>(Integer(value)); // иначе целочисленный
 }
+
+long long Parser::Rune(const string& text) {
+    
+    string value = text.substr(1, text.size() - 2); // удаляем кавычки
+
+    if (value[0] != '\\') {
+        return static_cast<unsigned char>(value[0]); // преобразовываем то что внутри в символ
+    }
+
+    return DecodeEscape(value); // преобразовываем из escape символа
+}
+
 long long Parser::DecodeEscape(const string& text) {
     
     // Если строка содержит всего два символа, то прогоняем ее из предопределенных последовательностей

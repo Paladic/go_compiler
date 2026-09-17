@@ -35,6 +35,11 @@ public:
     /// @param text строка
     /// @return мннимое число без мнимой части
     static double Imaginary(const string& text);
+    
+    /// @brief Преобразовывает строку в отдельный символ
+    /// @param text строка
+    /// @return восьмиричное число соответсвующее escape символу
+    static long long Rune(const string& text);
 };
 
 #endif
