@@ -21,6 +21,24 @@ DIGIT           [0-9]
 IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
 
 
+/* ---------- Целочисленные литералы ---------- */
+
+DECIMAL_DIGIT       [0-9]
+BINARY_DIGIT        [01]
+OCTAL_DIGIT         [0-7]
+HEX_DIGIT           [0-9a-fA-F]
+
+DECIMAL_DIGITS      {DECIMAL_DIGIT}(_?{DECIMAL_DIGIT})*
+BINARY_DIGITS       {BINARY_DIGIT}(_?{BINARY_DIGIT})*
+OCTAL_DIGITS        {OCTAL_DIGIT}(_?{OCTAL_DIGIT})*
+HEX_DIGITS          {HEX_DIGIT}(_?{HEX_DIGIT})*
+
+DECIMAL_LITERAL     0|[1-9](_?{DECIMAL_DIGITS})?
+BINARY_LITERAL      0[bB]_?{BINARY_DIGITS}
+OCTAL_LITERAL       0[oO]_?{OCTAL_DIGITS}
+OLD_OCTAL_LITERAL   0_?{OCTAL_DIGITS}
+HEX_LITERAL         0[xX]_?{HEX_DIGITS}
+
 %%
 
     /* Комментари внутри этого блока пишутся вот в этом синтаксесе и обязательно перед комментаривем табуляцию */
@@ -125,6 +143,44 @@ IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
 
 "var" {
     Logger::Token("VAR");
+}
+
+
+    /* ---------- Целочисленные литералы ---------- */
+
+{BINARY_LITERAL} {
+    Logger::Value(
+        "BINARY_LITERAL",
+        Parser::Integer(yytext)
+    );
+}
+
+{OCTAL_LITERAL} {
+    Logger::Value(
+        "OCTAL_LITERAL",
+        Parser::Integer(yytext)
+    );
+}
+
+{OLD_OCTAL_LITERAL} {
+    Logger::Value(
+        "OCTAL_LITERAL",
+        Parser::Integer(yytext)
+    );
+}
+
+{HEX_LITERAL} {
+    Logger::Value(
+        "HEX_LITERAL",
+        Parser::Integer(yytext)
+    );
+}
+
+{DECIMAL_LITERAL} {
+    Logger::Value(
+        "DECIMAL_LITERAL",
+        Parser::Integer(yytext)
+    );
 }
 
     /* ---------- Арифметические операторы ---------- */
