@@ -7,6 +7,9 @@ parser.tab.c
 parser.tab.h
 .vscode/c_cpp_properties.json
 
+#Bison
+*.tab.*
+
 # Object files
 *.o
 *.obj
