@@ -1,7 +1,5 @@
 #include "Parser.h"
 
-#include <string>
-
 using std::string;
 
 long long Parser::Integer(const string& text) {
@@ -17,7 +15,7 @@ long long Parser::Integer(const string& text) {
     // 
     if (value.size() >= 2 && value[0] == '0') {
         
-        char secondSymbol = tolower(value[1]); // опускаем в нижний регистр, чтобы проверять условно только 'b', а не 'b' и 'B'
+        char secondSymbol = static_cast<char>(std::tolower(static_cast<unsigned char>(value[1]))); // опускаем в нижний регистр, чтобы проверять условно только 'b', а не 'b' и 'B'
 
         // Двоичные числа - 0b1010
         if (secondSymbol == 'b') {
@@ -70,7 +68,8 @@ string Parser::removeLowLines(const string& text) {
 
 double Parser::Imaginary(const string& text) {
     
-    string value = text.substr(0, text.size() - 1); // удаляем последний символ (i)
+    string value = removeLowLines(text.substr(0, text.size() - 1)); // удаляем все _ и i в конце
+
 
     // Если оставшийся текст - содержит признаки вещественного числа, то преобразуем его в него  
     if (
@@ -83,18 +82,38 @@ double Parser::Imaginary(const string& text) {
         return Float(value);
     }
 
-    return static_cast<double>(Integer(value)); // иначе целочисленный
+     if (value.size() >= 2 && value[0] == '0') {
+
+        char secondSymbol = static_cast<char>(std::tolower(static_cast<unsigned char>(value[1])));
+
+        if (
+            secondSymbol == 'b' ||
+            secondSymbol == 'o' ||
+            secondSymbol == 'x'
+        ) {
+            return static_cast<double>(
+                Integer(value)
+            );
+        }
+    }
+
+    // Без явного 0b / 0o / 0x
+    // imaginary integer всегда decimal.
+    return static_cast<double>(
+        std::stoll(value, nullptr, 10)
+    );
 }
 
 long long Parser::Rune(const string& text) {
     
     string value = text.substr(1, text.size() - 2); // удаляем кавычки
 
-    if (value[0] != '\\') {
-        return static_cast<unsigned char>(value[0]); // преобразовываем то что внутри в символ
+    if (value[0] == '\\') {
+        return DecodeEscape(value); // преобразовываем из escape символа
     }
 
-    return DecodeEscape(value); // преобразовываем из escape символа
+    return DecodeUTF8(value); // преобразовываем то что внутри в символ
+
 }
 
 long long Parser::DecodeEscape(const string& text) {
@@ -254,4 +273,17 @@ string Parser::EscapeToString(const string& text)
     }
 
     return EncodeUTF8(value);
+}
+
+bool Parser::IsValidUnicodeCodePoint(long long value)
+{
+    return
+        value >= 0 &&
+        value <= 0x10FFFF &&
+        !(value >= 0xD800 && value <= 0xDFFF);
+}
+
+long long Parser::EscapeValue(const string& text)
+{
+    return DecodeEscape(text);
 }

@@ -2,6 +2,7 @@
 #define COMPILER_LITERAL_H
 
 #include <string>
+#include <cctype>
 
 using std::string;
 
@@ -56,6 +57,13 @@ public:
     /// @return декодированный символ 
     static string EscapeToString(const string& text);
 
+    /// @brief Проверяет допустимый ли символ
+    /// @param value 
+    /// @return 
+    static bool IsValidUnicodeCodePoint(long long value);
+
+    static long long EscapeValue(const string& text);
+    
 };
 
 #endif
