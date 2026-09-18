@@ -1,15 +1,23 @@
+``
 `hello`
-
 `hello world`
-
 `hello\nworld`
-
-`C:\Users\Test\file.txt`
-
-`"hello"`
+`\u03A9`
+`\x41`
+`Ω`
+`я`
+`日本語`
+`😀`
 
 `first line
 second line
 third line`
 
-`\t \n \x41 \u0041`
+`escapes are not interpreted: \n \t \x41 \u03A9`
+
+`mixed:
+hello
+Ω
+😀
+\n
+\u03A9`
