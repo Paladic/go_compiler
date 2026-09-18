@@ -335,6 +335,15 @@ STRING_CHAR         [^\\\"\n\r]
     autoSemi = false;
 }
 
+\'[^'\n\r]* {
+    Logger::Error(
+        "Unclosed rune literal '" + string(yytext) +
+        "' at line " + std::to_string(yylineno)
+    );
+
+    autoSemi = false;
+}
+
     /* ---------- Стороковые литералы ---------- */
 
 \" {
