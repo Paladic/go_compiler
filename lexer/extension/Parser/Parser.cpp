@@ -125,37 +125,133 @@ long long Parser::DecodeEscape(const string& text) {
     return std::stoll(text.substr(1), nullptr, 8); // читаем как восьмиричный
 }
 
-string Parser::EscapeToString(const string& text) {
-    
-    long long code = DecodeEscape(text); // снчала декодируем его
+long long Parser::DecodeUTF8(const string& text)
+{
+    unsigned char b1 = static_cast<unsigned char>(text[0]);
+
+    // 1 байт
+    if (b1 <= 0x7F) {
+        return b1;
+    }
+
+    // 2 байта
+    if ((b1 & 0xE0) == 0xC0) {
+
+        unsigned char b2 =
+            static_cast<unsigned char>(text[1]);
+
+        return ((b1 & 0x1F) << 6) |
+               (b2 & 0x3F);
+    }
+
+    // 3 байта
+    if ((b1 & 0xF0) == 0xE0) {
+
+        unsigned char b2 =
+            static_cast<unsigned char>(text[1]);
+
+        unsigned char b3 =
+            static_cast<unsigned char>(text[2]);
+
+        return ((b1 & 0x0F) << 12) |
+               ((b2 & 0x3F) << 6) |
+               (b3 & 0x3F);
+    }
+
+    // 4 байта
+    unsigned char b2 =
+        static_cast<unsigned char>(text[1]);
+
+    unsigned char b3 =
+        static_cast<unsigned char>(text[2]);
+
+    unsigned char b4 =
+        static_cast<unsigned char>(text[3]);
+
+    return ((b1 & 0x07) << 18) |
+           ((b2 & 0x3F) << 12) |
+           ((b3 & 0x3F) << 6) |
+           (b4 & 0x3F);
+}
+
+string Parser::EncodeUTF8(long long code)
+{
+    string result;
 
     // 1 байт
     if (code <= 0x7F) {
-        return string(1, static_cast<char>(code));
+        result += static_cast<char>(code);
     }
-
-    string result;
 
     // 2 байта
-    if (code <= 0x7FF) {
-        result += static_cast<char>(0xC0 | (code >> 6));
-        result += static_cast<char>(0x80 | (code & 0x3F));
+    else if (code <= 0x7FF) {
+        result += static_cast<char>(
+            0xC0 | (code >> 6)
+        );
+
+        result += static_cast<char>(
+            0x80 | (code & 0x3F)
+        );
     }
-    
+
     // 3 байта
     else if (code <= 0xFFFF) {
-        result += static_cast<char>(0xE0 | (code >> 12));
-        result += static_cast<char>(0x80 | ((code >> 6) & 0x3F));
-        result += static_cast<char>(0x80 | (code & 0x3F));
+        result += static_cast<char>(
+            0xE0 | (code >> 12)
+        );
+
+        result += static_cast<char>(
+            0x80 | ((code >> 6) & 0x3F)
+        );
+
+        result += static_cast<char>(
+            0x80 | (code & 0x3F)
+        );
     }
-    
+
     // 4 байта
     else {
-        result += static_cast<char>(0xF0 | (code >> 18));
-        result += static_cast<char>(0x80 | ((code >> 12) & 0x3F));
-        result += static_cast<char>(0x80 | ((code >> 6) & 0x3F));
-        result += static_cast<char>(0x80 | (code & 0x3F));
+        result += static_cast<char>(
+            0xF0 | (code >> 18)
+        );
+
+        result += static_cast<char>(
+            0x80 | ((code >> 12) & 0x3F)
+        );
+
+        result += static_cast<char>(
+            0x80 | ((code >> 6) & 0x3F)
+        );
+
+        result += static_cast<char>(
+            0x80 | (code & 0x3F)
+        );
     }
 
     return result;
+}
+
+string Parser::EscapeToString(const string& text)
+{
+    long long value = DecodeEscape(text);
+
+    // 1 байт
+    if (text[1] == 'x' ||
+        (text[1] >= '0' && text[1] <= '7')) {
+
+        return string(
+            1,
+            static_cast<char>(value)
+        );
+    }
+
+    // escape последовательности
+    if (text.size() == 2) {
+        return string(
+            1,
+            static_cast<char>(value)
+        );
+    }
+
+    return EncodeUTF8(value);
 }

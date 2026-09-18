@@ -19,6 +19,16 @@ private:
     /// @return восьмиричное число соответсвующее escape символу
     static long long DecodeEscape(const string& text);
 
+    /// @brief получает код UTF8 из строки-значения
+    /// @param text строка-значение
+    /// @return код UTF8
+    static long long DecodeUTF8(const string& text);
+
+    /// @brief Получает строку-значение из кода UTF8
+    /// @param code код UTF8
+    /// @return строка-значение
+    static string EncodeUTF8(long long code);
+
 public:
 
     /// @brief Преобразовывает строку в целочисленный тип данных
