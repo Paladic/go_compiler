@@ -24,6 +24,14 @@
             "command": "Get-ChildItem tests\\lexer\\*.txt | ForEach-Object { Write-Host \"`n=== $($_.Name) ===\"; .\\lexer\\lexer.exe $_.FullName }",
             "dependsOn": "Build lexer",
             "problemMatcher": []
+        },
+        {
+            "label": "Test selected lexer",
+            "type": "shell",
+            "command": "$files = @(Get-ChildItem tests\\lexer\\*.txt -Recurse); if ($files.Count -eq 0) { Write-Host 'No lexer tests found'; exit 1 }; for ($i = 0; $i -lt $files.Count; $i++) { $relative = Resolve-Path -Relative $files[$i].FullName; Write-Host \"[$($i + 1)] $relative\" }; $choice = [int](Read-Host 'Select test') - 1; if ($choice -lt 0 -or $choice -ge $files.Count) { Write-Host 'Invalid selection'; exit 1 }; $selected = Resolve-Path -Relative $files[$choice].FullName; Write-Host \"`n=== $selected ===\"; .\\lexer\\lexer.exe $files[$choice].FullName",
+            "dependsOn": "Build lexer",
+            "problemMatcher": []
         }
     ]
+
 }
