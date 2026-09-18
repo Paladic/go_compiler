@@ -577,7 +577,7 @@ STRING_CHAR         [^\\\"\n\r]
     /* ---------- Перевод строки ---------- */
 \n {
     if (autoSemi) {
-        Logger::Value("PUNCTUATION", ";");
+        Logger::Token("SEMICOLON");
         autoSemi = false;
     }
 }
@@ -609,7 +609,7 @@ STRING_CHAR         [^\\\"\n\r]
 
 <COMMENT>\n {
     if (autoSemi) {
-        Logger::Value("PUNCTUATION", ";");
+        Logger::Token("SEMICOLON");
         autoSemi = false;
     }
 }
@@ -625,121 +625,120 @@ STRING_CHAR         [^\\\"\n\r]
     /* ---------- Операторы присваивания ---------- */
 
 "=" {
-    Logger::Value("OPERATOR", "=");
+    Logger::Token("ASSIGN");
     autoSemi = false;
 }
 
 "+=" {
-    Logger::Value("OPERATOR", "+=");
+    Logger::Token("PLUS_ASSIGN");
     autoSemi = false;
 }
 
 "-=" {
-    Logger::Value("OPERATOR", "-=");
+    Logger::Token("MINUS_ASSIGN");
     autoSemi = false;
 }
 
 "*=" {
-    Logger::Value("OPERATOR", "*=");
+    Logger::Token("MULTIPLY_ASSIGN");
     autoSemi = false;
 }
 
 "/=" {
-    Logger::Value("OPERATOR", "/=");
+    Logger::Token("DIVIDE_ASSIGN");
     autoSemi = false;
 }
 
 "%=" {
-    Logger::Value("OPERATOR", "%=");
+    Logger::Token("MODULO_ASSIGN");
     autoSemi = false;
 }
 
 "&=" {
-    Logger::Value("OPERATOR", "&=");
+    Logger::Token("BIT_AND_ASSIGN");
     autoSemi = false;
 }
 
 "|=" {
-    Logger::Value("OPERATOR", "|=");
+    Logger::Token("BIT_OR_ASSIGN");
     autoSemi = false;
 }
 
 "^=" {
-    Logger::Value("OPERATOR", "^=");
+    Logger::Token("BIT_XOR_ASSIGN");
     autoSemi = false;
 }
 
 "<<=" {
-    Logger::Value("OPERATOR", "<<=");
+    Logger::Token("LEFT_SHIFT_ASSIGN");
     autoSemi = false;
 }
 
 ">>=" {
-    Logger::Value("OPERATOR", ">>=");
+    Logger::Token("RIGHT_SHIFT_ASSIGN");
     autoSemi = false;
 }
 
 "&^=" {
-    Logger::Value("OPERATOR", "&^=");
+    Logger::Token("BIT_CLEAR_ASSIGN");
     autoSemi = false;
 }
 
     /* ---------- Короткое объявление ---------- */
 
 ":=" {
-    Logger::Value("OPERATOR", ":=");
+    Logger::Token("DECLARE_ASSIGN");
     autoSemi = false;
 }
-
 
     /* ---------- Инкремент / декремент ---------- */
 
 "++" {
-    Logger::Value("OPERATOR", "++");
+    Logger::Token("INCREMENT");
     autoSemi = true;
 }
 
 "--" {
-    Logger::Value("OPERATOR", "--");
+    Logger::Token("DECREMENT");
     autoSemi = true;
 }
 
     /* ---------- Оператор канала ---------- */
 
 "<-" {
-    Logger::Value("OPERATOR", "<-");
+    Logger::Token("CHANNEL_ARROW");
     autoSemi = false;
 }
 
     /* ---------- Скобки ---------- */
 
 "(" {
-    Logger::Value("PUNCTUATION", "(");
+    Logger::Token("LEFT_PAREN");
     autoSemi = false;
 }
 
 ")" {
-    Logger::Value("PUNCTUATION", ")");
+    Logger::Token("RIGHT_PAREN");
     autoSemi = true;
 }
 
 "[" {
-    Logger::Value("PUNCTUATION", "[");
+    Logger::Token("LEFT_BRACKET");
     autoSemi = false;
 }
 
 "]" {
-    Logger::Value("PUNCTUATION", "]");
+    Logger::Token("RIGHT_BRACKET");
     autoSemi = true;
 }
 
 "{" {
-    Logger::Value("PUNCTUATION", "{");
+    Logger::Token("LEFT_BRACE");
     autoSemi = false;
 }
 
 "}" {
-    Logger::Value("PUNCTUATION", "}");
+    Logger::Token("RIGHT_BRACE");
     autoSemi = true;
 }
 
@@ -747,42 +746,42 @@ STRING_CHAR         [^\\\"\n\r]
     /* ---------- Пунктуация ---------- */
 
 "," {
-    Logger::Value("PUNCTUATION", ",");
+    Logger::Token("COMMA");
     autoSemi = false;
 }
 
 ":" {
-    Logger::Value("PUNCTUATION", ":");
+    Logger::Token("COLON");
     autoSemi = false;
 }
 
 "." {
-    Logger::Value("PUNCTUATION", ".");
+    Logger::Token("DOT");
     autoSemi = false;
 }
 
 "..." {
-    Logger::Value("PUNCTUATION", "...");
+    Logger::Token("ELLIPSIS");
     autoSemi = false;
 }
 
     /* ---------- Тильда ---------- */
 
 "~" {
-    Logger::Value("OPERATOR", "~");
+    Logger::Token("TILDE");
     autoSemi = false;
 }
 
     /* ---------- Точка с запятой ---------- */
 ";" {
-    Logger::Value("PUNCTUATION", ";");
+    Logger::Token("SEMICOLON");
     autoSemi = false;
 }
 
     /* если файл закончился после токена, а мы должны были вставить ;, то вставляем */
-<<EOF>> {
+<INITIAL><<EOF>> {
     if (autoSemi) {
-        Logger::Value("PUNCTUATION", ";");
+        Logger::Token("SEMICOLON");
         autoSemi = false;
     }
 
