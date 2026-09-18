@@ -585,26 +585,26 @@ STRING_CHAR         [^\\\"\n\r]
     /* ---------- Однострочные комментарии ---------- */
 
 \/\/.* {
-    Logger::Value("COMMENT", string(yytext));
+    //Logger::Value("COMMENT", string(yytext));
 }
 
     /* ---------- Многострочные комментарии ---------- */
 "/*" {
     BEGIN(COMMENT);
-    Logger::Value("COMMENT", "/*");
+    //Logger::Value("COMMENT", "/*");
 }
 
 <COMMENT>"*/" {
     BEGIN(INITIAL);
-    Logger::Value("COMMENT", "*/");
+    //Logger::Value("COMMENT", "*/");
 }
 
 <COMMENT>[^*\n]+ {
-    Logger::Value("COMMENT", string(yytext));
+    //Logger::Value("COMMENT", string(yytext));
 }
 
 <COMMENT>"*" {
-    Logger::Value("COMMENT", string(yytext));
+    //Logger::Value("COMMENT", string(yytext));
 }
 
 <COMMENT>\n {
