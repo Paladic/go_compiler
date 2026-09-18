@@ -66,43 +66,64 @@ string Parser::removeLowLines(const string& text) {
 
 }
 
-double Parser::Imaginary(const string& text) {
-    
-    string value = removeLowLines(text.substr(0, text.size() - 1)); // удаляем все _ и i в конце
+double Parser::Imaginary(const string& text)
+{
+    string value = removeLowLines(
+        text.substr(0, text.size() - 1)
+    );
 
+    if (value.size() >= 2 && value[0] == '0') {
 
-    // Если оставшийся текст - содержит признаки вещественного числа, то преобразуем его в него  
-    if (
-        value.find('.') != string::npos ||
-        value.find('e') != string::npos ||
-        value.find('E') != string::npos ||
-        value.find('p') != string::npos ||
-        value.find('P') != string::npos
-    ) {
-        return Float(value);
-    }
+        char secondSymbol =
+            static_cast<char>(
+                std::tolower(
+                    static_cast<unsigned char>(value[1])
+                )
+            );
 
-     if (value.size() >= 2 && value[0] == '0') {
-
-        char secondSymbol = static_cast<char>(std::tolower(static_cast<unsigned char>(value[1])));
-
+        // Явные binary/octal literals
         if (
             secondSymbol == 'b' ||
-            secondSymbol == 'o' ||
-            secondSymbol == 'x'
+            secondSymbol == 'o'
         ) {
+            return static_cast<double>(
+                Integer(value)
+            );
+        }
+
+        // Hexadecimal
+        if (secondSymbol == 'x') {
+
+            // Только p/P превращает hex literal в float
+            if (
+                value.find('p') != string::npos ||
+                value.find('P') != string::npos
+            ) {
+                return Float(value);
+            }
+
             return static_cast<double>(
                 Integer(value)
             );
         }
     }
 
-    // Без явного 0b / 0o / 0x
-    // imaginary integer всегда decimal.
+    // Decimal float
+    if (
+        value.find('.') != string::npos ||
+        value.find('e') != string::npos ||
+        value.find('E') != string::npos
+    ) {
+        return Float(value);
+    }
+
+    // Особое правило Go:
+    // 0123i == 123i, а не octal 0123
     return static_cast<double>(
         std::stoll(value, nullptr, 10)
     );
 }
+
 
 long long Parser::Rune(const string& text) {
     
