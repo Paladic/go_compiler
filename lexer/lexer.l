@@ -2,6 +2,10 @@
 
 %{
 
+// все варианты идентификаторов реализовывать не надо
+// супер длинные числа реализовывать не надо
+// 
+
 // глобальные переменные, бибилотеки, функции и т.д.
 
 #include <cstdio>
@@ -80,7 +84,7 @@ BINARY_CANDIDATE  0[bB][0-9_]*(\.[0-9_]*|[eEpP][+-]?[0-9_]*)?i?
 
 OCTAL_CANDIDATE   0[oO][0-9_]*(\.[0-9_]*|[eEpP][+-]?[0-9_]*)?i?
 
-HEX_CANDIDATE     0[xX][0-9a-fA-F_]*(\.[0-9a-fA-F_]*)?([eEpP][+-]?[0-9_]*)?i?
+HEX_CANDIDATE  0[xX][0-9a-fA-F_]*(\.[0-9a-fA-F_]*)?([pP][+-]?[0-9_]*)?i?
 
 DECIMAL_CANDIDATE (([0-9][0-9_]*(\.[0-9_]*)?)|(\.[0-9][0-9_]*))([eEpP][+-]?[0-9_]*)?i?
 
@@ -334,7 +338,6 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
     /* ---------- Символьные литералы ---------- */
 
 {RUNE_LITERAL} {
-    
     long long value = Parser::Rune(yytext);
 
     if (!Parser::IsValidUnicodeCodePoint(value)) {
@@ -466,6 +469,7 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
     /*
         возможен в случае если находится в конце строки 
     */
+   // TODO Add new line
 }
 
 <STRING>\" {
