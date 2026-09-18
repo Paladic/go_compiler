@@ -22,6 +22,8 @@ Buffer buffer;
 /* флаг проверки на корректность строковых литералов */
 bool stringInvalid = false;
 
+bool rawStringInvalid = false;
+
 /* Флаг автоматической вставки точки с запятой */
 bool autoSemi = false;
 
@@ -41,9 +43,12 @@ ASCII_LETTER    [A-Za-z_]
 ASCII_DIGIT     [0-9]
 
 UTF8_CONT       [\200-\277]
+
 UTF8_2          [\302-\337]{UTF8_CONT}
-UTF8_3          [\340-\357]{UTF8_CONT}{UTF8_CONT}
-UTF8_4          [\360-\364]{UTF8_CONT}{UTF8_CONT}{UTF8_CONT}
+
+UTF8_3          (\340[\240-\277]{UTF8_CONT}|[\341-\354]{UTF8_CONT}{UTF8_CONT}|\355[\200-\237]{UTF8_CONT}|[\356-\357]{UTF8_CONT}{UTF8_CONT})
+
+UTF8_4          (\360[\220-\277]{UTF8_CONT}{UTF8_CONT}|[\361-\363]{UTF8_CONT}{UTF8_CONT}{UTF8_CONT}|\364[\200-\217]{UTF8_CONT}{UTF8_CONT})
 
 UTF8_CHAR       ({UTF8_2}|{UTF8_3}|{UTF8_4})
 
@@ -71,6 +76,14 @@ OCTAL_LITERAL       0[oO]_?{OCTAL_DIGITS}
 OLD_OCTAL_LITERAL   0_?{OCTAL_DIGITS}
 HEX_LITERAL         0[xX]_?{HEX_DIGITS}
 
+BINARY_CANDIDATE  0[bB][0-9_]*(\.[0-9_]*|[eEpP][+-]?[0-9_]*)?i?
+
+OCTAL_CANDIDATE   0[oO][0-9_]*(\.[0-9_]*|[eEpP][+-]?[0-9_]*)?i?
+
+HEX_CANDIDATE     0[xX][0-9a-fA-F_]*(\.[0-9a-fA-F_]*)?([eEpP][+-]?[0-9_]*)?i?
+
+DECIMAL_CANDIDATE (([0-9][0-9_]*(\.[0-9_]*)?)|(\.[0-9][0-9_]*))([eEpP][+-]?[0-9_]*)?i?
+
 /* ---------- Литералы с плавающей точкой ---------- */
 
 DECIMAL_EXPONENT    [eE][+-]?{DECIMAL_DIGITS}
@@ -78,32 +91,35 @@ BINARY_EXPONENT     [pP][+-]?{DECIMAL_DIGITS}
 
 DECIMAL_FLOAT       ({DECIMAL_DIGITS}"."{DECIMAL_DIGITS}?{DECIMAL_EXPONENT}?)|({DECIMAL_DIGITS}{DECIMAL_EXPONENT})|("."{DECIMAL_DIGITS}{DECIMAL_EXPONENT}?)
 
-HEX_MANTISSA        (({HEX_DIGITS}"."{HEX_DIGITS}?)|({HEX_DIGITS})|("."{HEX_DIGITS}))
-HEX_FLOAT           0[xX]_?{HEX_MANTISSA}{BINARY_EXPONENT}
+HEX_MANTISSA        ((_?{HEX_DIGITS}"."{HEX_DIGITS}?)|(_?{HEX_DIGITS})|("."{HEX_DIGITS}))
+HEX_FLOAT           0[xX]{HEX_MANTISSA}{BINARY_EXPONENT}
 
 /* ---------- Мнимые литералы ---------- */
 
-IMAGINARY_LITERAL   ({DECIMAL_LITERAL}|{BINARY_LITERAL}|{OCTAL_LITERAL}|{OLD_OCTAL_LITERAL}|{HEX_LITERAL}|{DECIMAL_FLOAT}|{HEX_FLOAT})i
+IMAGINARY_LITERAL   ({DECIMAL_DIGITS}|{BINARY_LITERAL}|{OCTAL_LITERAL}|{HEX_LITERAL}|{DECIMAL_FLOAT}|{HEX_FLOAT})i
 
 /* ---------- Символьные литералы  ---------- */
 
-OCTAL_BYTE_ESCAPE   \\[0-7]{3}
+OCTAL_BYTE_ESCAPE   \\[0-3][0-7]{2}
 HEX_BYTE_ESCAPE     \\x[0-9a-fA-F]{2}
 UNICODE_4_ESCAPE    \\u[0-9a-fA-F]{4}
 UNICODE_8_ESCAPE    \\U[0-9a-fA-F]{8}
 
 RUNE_ESCAPE         (\\[abfnrtv\\']|{OCTAL_BYTE_ESCAPE}|{HEX_BYTE_ESCAPE}|{UNICODE_4_ESCAPE}|{UNICODE_8_ESCAPE})
 
-ASCII_RUNE_CHAR     [^\\'\n\r\200-\377]
+ASCII_RUNE_CHAR     [^\\'\n\200-\377]
 RUNE_CHAR           ({ASCII_RUNE_CHAR}|{UTF8_CHAR})
 
 RUNE_LITERAL        \'({RUNE_CHAR}|{RUNE_ESCAPE})\'
 
-
 /* ---------- Стороковые литералы  ---------- */
 
 STRING_ESCAPE       (\\[abfnrtv\\"]|{OCTAL_BYTE_ESCAPE}|{HEX_BYTE_ESCAPE}|{UNICODE_4_ESCAPE}|{UNICODE_8_ESCAPE})
-STRING_CHAR         [^\\\"\n\r]
+ASCII_STRING_CHAR   [^\\\"\n\200-\377]
+STRING_CHAR         ({ASCII_STRING_CHAR}|{UTF8_CHAR})
+
+ASCII_RAW_STRING_CHAR   [^`\r\n\200-\377]
+RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 
 %%
 
@@ -318,15 +334,28 @@ STRING_CHAR         [^\\\"\n\r]
     /* ---------- Символьные литералы ---------- */
 
 {RUNE_LITERAL} {
-    Logger::Value(
-        "RUNE_LITERAL",
-        Parser::Rune(yytext)
-    );
+    
+    long long value = Parser::Rune(yytext);
 
-    autoSemi = true;
+    if (!Parser::IsValidUnicodeCodePoint(value)) {
+        Logger::Error(
+            "Invalid rune literal '" + string(yytext) +
+            "' at line " + std::to_string(yylineno)
+        );
+
+        autoSemi = false;
+    }
+    else {
+        Logger::Value(
+            "RUNE_LITERAL",
+            value
+        );
+
+        autoSemi = true;
+    }
 }
 
-\'[^'\n\r]*\' {
+\'[^'\n]*\' {
     Logger::Error(
         "Invalid rune literal '" + string(yytext) +
         "' at line " + std::to_string(yylineno)
@@ -335,9 +364,47 @@ STRING_CHAR         [^\\\"\n\r]
     autoSemi = false;
 }
 
-\'[^'\n\r]* {
+\'[^'\n]* {
     Logger::Error(
         "Unclosed rune literal '" + string(yytext) +
+        "' at line " + std::to_string(yylineno)
+    );
+
+    autoSemi = false;
+}
+
+    /* ---------- ошибки ------------- */
+
+{BINARY_CANDIDATE} {
+    Logger::Error(
+        "Invalid binary literal '" + string(yytext) +
+        "' at line " + std::to_string(yylineno)
+    );
+
+    autoSemi = false;
+}
+
+{OCTAL_CANDIDATE} {
+    Logger::Error(
+        "Invalid octal literal '" + string(yytext) +
+        "' at line " + std::to_string(yylineno)
+    );
+
+    autoSemi = false;
+}
+
+{HEX_CANDIDATE} {
+    Logger::Error(
+        "Invalid hexadecimal literal '" + string(yytext) +
+        "' at line " + std::to_string(yylineno)
+    );
+
+    autoSemi = false;
+}
+
+{DECIMAL_CANDIDATE} {
+    Logger::Error(
+        "Invalid numeric literal '" + string(yytext) +
         "' at line " + std::to_string(yylineno)
     );
 
@@ -357,7 +424,33 @@ STRING_CHAR         [^\\\"\n\r]
 }
 
 <STRING>{STRING_ESCAPE} {
-    buffer.Append(Parser::EscapeToString(yytext));
+    
+    string escape = yytext;
+
+    if (escape[1] == 'u' || escape[1] == 'U') {
+
+        long long value =
+            Parser::EscapeValue(escape);
+
+        if (!Parser::IsValidUnicodeCodePoint(value)) {
+            Logger::Error(
+                "Invalid Unicode escape '" + escape +
+                "' at line " + std::to_string(yylineno)
+            );
+
+            stringInvalid = true;
+        }
+        else {
+            buffer.Append(
+                Parser::EscapeToString(escape)
+            );
+        }
+    }
+    else {
+        buffer.Append(
+            Parser::EscapeToString(escape)
+        );
+    }
 }
 
 <STRING>\\. {
@@ -367,6 +460,12 @@ STRING_CHAR         [^\\\"\n\r]
     );
 
     stringInvalid = true;
+}
+
+<STRING>\\ {
+    /*
+        возможен в случае если находится в конце строки 
+    */
 }
 
 <STRING>\" {
@@ -407,14 +506,24 @@ STRING_CHAR         [^\\\"\n\r]
     yyterminate();
 }
 
+<STRING>[\200-\377] {
+    Logger::Error(
+        "Invalid UTF-8 sequence at line " +
+        std::to_string(yylineno)
+    );
+
+    stringInvalid = true;
+}
+
     /* ---------- Необработавыаемые строковые литералы ---------- */
 
 ` {
     buffer.Reset(yylineno);
+    rawStringInvalid = false;
     BEGIN(RAW_STRING);
 }
 
-<RAW_STRING>[^`\r\n]+ {
+<RAW_STRING>{RAW_STRING_CHAR}+ {
     buffer.Append(yytext);
 }
 
@@ -427,12 +536,17 @@ STRING_CHAR         [^\\\"\n\r]
 }
 
 <RAW_STRING>` {
-    Logger::Value(
-        "RAW_STRING_LITERAL",
-        buffer.Get()
-    );
+     if (!rawStringInvalid) {
+        Logger::Value(
+            "RAW_STRING_LITERAL",
+            buffer.Get()
+        );
 
-    autoSemi = true;
+        autoSemi = true;
+    }
+    else {
+        autoSemi = false;
+    }
 
     BEGIN(INITIAL);
 }
@@ -445,6 +559,15 @@ STRING_CHAR         [^\\\"\n\r]
     );
 
     yyterminate();
+}
+
+<RAW_STRING>[\200-\377] {
+    Logger::Error(
+        "Invalid UTF-8 sequence at line " +
+        std::to_string(yylineno)
+    );
+
+    rawStringInvalid = true;
 }
 
     /* ---------- Арифметические операторы ---------- */
