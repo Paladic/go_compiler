@@ -4,7 +4,7 @@
 
 // все варианты идентификаторов реализовывать не надо
 // супер длинные числа реализовывать не надо
-// 
+// Решить как мы хотим сделать в слуычае если не закрыт строковый литерал: ставить в конце строки самим ;, либо считать весь текст ниже текстом
 
 // глобальные переменные, бибилотеки, функции и т.д.
 
@@ -30,6 +30,13 @@ bool rawStringInvalid = false;
 
 /* Флаг автоматической вставки точки с запятой */
 bool autoSemi = false;
+
+#define RETURN_TOKEN(token, semi)   \
+    do {                            \
+        Logger::Token(#token);      \
+        autoSemi = (semi);          \
+        return token;               \
+    } while (0)
 
 %}
 
@@ -81,7 +88,7 @@ OLD_OCTAL_LITERAL   0_?{OCTAL_DIGITS}
 HEX_LITERAL         0[xX]_?{HEX_DIGITS}
 
 BINARY_CANDIDATE  0[bB][0-9_]*(\.[0-9_]*|[eEpP][+-]?[0-9_]*)?i?
-
+/* 0[bB][0-9_]+ */
 OCTAL_CANDIDATE   0[oO][0-9_]*(\.[0-9_]*|[eEpP][+-]?[0-9_]*)?i?
 
 HEX_CANDIDATE  0[xX][0-9a-fA-F_]*(\.[0-9a-fA-F_]*)?([pP][+-]?[0-9_]*)?i?
@@ -131,287 +138,273 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 
     /* ---------- Ключевые слова ---------- */
 
-"break" {
-    Logger::Token("BREAK");
-    autoSemi = true;
-}
-
-"default" {
-    Logger::Token("DEFAULT");
-    autoSemi = false;
-}
-
-"func" {
-    Logger::Token("FUNC");
-    autoSemi = false;
-}
-
-"interface" {
-    Logger::Token("INTERFACE");
-    autoSemi = false;
-}
-
-"select" {
-    Logger::Token("SELECT");
-    autoSemi = false;
-}
-
-"case" {
-    Logger::Token("CASE");
-    autoSemi = false;
-}
-
-"defer" {
-    Logger::Token("DEFER");
-    autoSemi = false;
-}
-
-"go" {
-    Logger::Token("GO");
-    autoSemi = false;
-}
-
-"map" {
-    Logger::Token("MAP");
-    autoSemi = false;
-}
-
-"struct" {
-    Logger::Token("STRUCT");
-    autoSemi = false;
-}
-
-"chan" {
-    Logger::Token("CHAN");
-    autoSemi = false;
-}
-
-"else" {
-    Logger::Token("ELSE");
-    autoSemi = false;
-}
-
-"goto" {
-    Logger::Token("GOTO");
-    autoSemi = false;
-}
-
-"package" {
-    Logger::Token("PACKAGE");
-    autoSemi = false;
-}
-
-"switch" {
-    Logger::Token("SWITCH");
-    autoSemi = false;
-}
-
-"const" {
-    Logger::Token("CONST");
-    autoSemi = false;
-}
-
-"fallthrough" {
-    Logger::Token("FALLTHROUGH");
-    autoSemi = true;
-}
-
-"if" {
-    Logger::Token("IF");
-    autoSemi = false;
-}
-
-"range" {
-    Logger::Token("RANGE");
-    autoSemi = false;
-}
-
-"type" {
-    Logger::Token("TYPE");
-    autoSemi = false;
-}
-
-"continue" {
-    Logger::Token("CONTINUE");
-    autoSemi = true;
-}
-
-"for" {
-    Logger::Token("FOR");
-    autoSemi = false;
-}
-
-"import" {
-    Logger::Token("IMPORT");
-    autoSemi = false;
-}
-
-"return" {
-    Logger::Token("RETURN");
-    autoSemi = true;
-}
-
-"var" {
-    Logger::Token("VAR");
-    autoSemi = false;
-}
+"break"       { RETURN_TOKEN(KW_BREAK, true); }
+"default"     { RETURN_TOKEN(KW_DEFAULT, false); }
+"func"        { RETURN_TOKEN(KW_FUNC, false); }
+"interface"   { RETURN_TOKEN(KW_INTERFACE, false); }
+"select"      { RETURN_TOKEN(KW_SELECT, false); }
+"case"        { RETURN_TOKEN(KW_CASE, false); }
+"defer"       { RETURN_TOKEN(KW_DEFER, false); }
+"go"          { RETURN_TOKEN(KW_GO, false); }
+"map"         { RETURN_TOKEN(KW_MAP, false); }
+"struct"      { RETURN_TOKEN(KW_STRUCT, false); }
+"chan"        { RETURN_TOKEN(KW_CHAN, false); }
+"else"        { RETURN_TOKEN(KW_ELSE, false); }
+"goto"        { RETURN_TOKEN(KW_GOTO, false); }
+"package"     { RETURN_TOKEN(KW_PACKAGE, false); }
+"switch"      { RETURN_TOKEN(KW_SWITCH, false); }
+"const"       { RETURN_TOKEN(KW_CONST, false); }
+"fallthrough" { RETURN_TOKEN(KW_FALLTHROUGH, true); }
+"if"          { RETURN_TOKEN(KW_IF, false); }
+"range"       { RETURN_TOKEN(KW_RANGE, false); }
+"type"        { RETURN_TOKEN(KW_TYPE, false); }
+"continue"    { RETURN_TOKEN(KW_CONTINUE, true); }
+"for"         { RETURN_TOKEN(KW_FOR, false); }
+"import"      { RETURN_TOKEN(KW_IMPORT, false); }
+"return"      { RETURN_TOKEN(KW_RETURN, true); }
+"var"         { RETURN_TOKEN(KW_VAR, false); }
 
     /* ---------- Мнимые литералы ---------- */
 
 {IMAGINARY_LITERAL} {
+    double value =
+        Parser::Imaginary(yytext);
+
     Logger::Value(
         "IMAGINARY_LITERAL",
-        Parser::Imaginary(yytext)
+        value
     );
 
+    yylval.floatValue = value;
+
     autoSemi = true;
+
+    return IMAGINARY_LITERAL;
 }
 
     /* ---------- Литералы с плавающей точкой ---------- */
 
 {HEX_FLOAT} {
+    double value =
+        Parser::Float(yytext);
+
     Logger::Value(
         "HEX_FLOAT_LITERAL",
-        Parser::Float(yytext)
+        value
     );
 
+    yylval.floatValue = value;
+
     autoSemi = true;
+
+    return HEX_FLOAT_LITERAL;
 }
 
 {DECIMAL_FLOAT} {
+    double value =
+        Parser::Float(yytext);
+
     Logger::Value(
         "FLOAT_LITERAL",
-        Parser::Float(yytext)
+        value
     );
 
-    autoSemi = true;
-}
+    yylval.floatValue = value;
 
+    autoSemi = true;
+
+    return FLOAT_LITERAL;
+}
 
     /* ---------- Целочисленные литералы ---------- */
 
 {BINARY_LITERAL} {
+    long long value =
+        Parser::Integer(yytext);
+
     Logger::Value(
         "BINARY_LITERAL",
-        Parser::Integer(yytext)
+        value
     );
 
+    yylval.integerValue = value;
+
     autoSemi = true;
+
+    return BINARY_LITERAL;
 }
 
 {OCTAL_LITERAL} {
+    long long value =
+        Parser::Integer(yytext);
+
     Logger::Value(
         "OCTAL_LITERAL",
-        Parser::Integer(yytext)
+        value
     );
 
+    yylval.integerValue = value;
+
     autoSemi = true;
+
+    return OCTAL_LITERAL;
 }
 
 {OLD_OCTAL_LITERAL} {
+    long long value =
+        Parser::Integer(yytext);
+
     Logger::Value(
         "OCTAL_LITERAL",
-        Parser::Integer(yytext)
+        value
     );
 
+    yylval.integerValue = value;
+
     autoSemi = true;
+
+    return OCTAL_LITERAL;
 }
 
 {HEX_LITERAL} {
+    long long value =
+        Parser::Integer(yytext);
+
     Logger::Value(
         "HEX_LITERAL",
-        Parser::Integer(yytext)
+        value
     );
 
+    yylval.integerValue = value;
+
     autoSemi = true;
+
+    return HEX_LITERAL;
 }
 
 {DECIMAL_LITERAL} {
+    long long value =
+        Parser::Integer(yytext);
+
     Logger::Value(
         "DECIMAL_LITERAL",
-        Parser::Integer(yytext)
+        value
     );
+
+    yylval.integerValue = value;
 
     autoSemi = true;
-}
 
-    /* ---------- Символьные литералы ---------- */
-
-{RUNE_LITERAL} {
-    long long value = Parser::Rune(yytext);
-
-    if (!Parser::IsValidUnicodeCodePoint(value)) {
-        Logger::Error(
-            "Invalid rune literal '" + string(yytext) +
-            "' at line " + std::to_string(yylineno)
-        );
-
-        autoSemi = false;
-    }
-    else {
-        Logger::Value(
-            "RUNE_LITERAL",
-            value
-        );
-
-        autoSemi = true;
-    }
-}
-
-\'[^'\n]*\' {
-    Logger::Error(
-        "Invalid rune literal '" + string(yytext) +
-        "' at line " + std::to_string(yylineno)
-    );
-
-    autoSemi = false;
-}
-
-\'[^'\n]* {
-    Logger::Error(
-        "Unclosed rune literal '" + string(yytext) +
-        "' at line " + std::to_string(yylineno)
-    );
-
-    autoSemi = false;
+    return DECIMAL_LITERAL;
 }
 
     /* ---------- ошибки ------------- */
-
 {BINARY_CANDIDATE} {
     Logger::Error(
-        "Invalid binary literal '" + string(yytext) +
-        "' at line " + std::to_string(yylineno)
+        "Invalid binary literal '" +
+        string(yytext) +
+        "' at line " +
+        std::to_string(yylineno)
     );
 
     autoSemi = false;
+
+    return LEXICAL_ERROR;
 }
 
 {OCTAL_CANDIDATE} {
     Logger::Error(
-        "Invalid octal literal '" + string(yytext) +
-        "' at line " + std::to_string(yylineno)
+        "Invalid octal literal '" +
+        string(yytext) +
+        "' at line " +
+        std::to_string(yylineno)
     );
 
     autoSemi = false;
+
+    return LEXICAL_ERROR;
 }
 
 {HEX_CANDIDATE} {
     Logger::Error(
-        "Invalid hexadecimal literal '" + string(yytext) +
-        "' at line " + std::to_string(yylineno)
+        "Invalid hexadecimal literal '" +
+        string(yytext) +
+        "' at line " +
+        std::to_string(yylineno)
     );
 
     autoSemi = false;
+
+    return LEXICAL_ERROR;
 }
 
 {DECIMAL_CANDIDATE} {
     Logger::Error(
-        "Invalid numeric literal '" + string(yytext) +
-        "' at line " + std::to_string(yylineno)
+        "Invalid numeric literal '" +
+        string(yytext) +
+        "' at line " +
+        std::to_string(yylineno)
     );
 
     autoSemi = false;
+
+    return LEXICAL_ERROR;
+}
+
+    /* ---------- Символьные литералы ---------- */
+{RUNE_LITERAL} {
+    long long value =
+        Parser::Rune(yytext);
+
+    if (!Parser::IsValidUnicodeCodePoint(value)) {
+        Logger::Error(
+            "Invalid rune literal '" +
+            string(yytext) +
+            "' at line " +
+            std::to_string(yylineno)
+        );
+
+        autoSemi = false;
+
+        return LEXICAL_ERROR;
+    }
+
+    Logger::Value(
+        "RUNE_LITERAL",
+        value
+    );
+
+    yylval.integerValue = value;
+
+    autoSemi = true;
+
+    return RUNE_LITERAL;
+}
+
+\'[^'\n]*\' {
+    Logger::Error(
+        "Invalid rune literal '" +
+        string(yytext) +
+        "' at line " +
+        std::to_string(yylineno)
+    );
+
+    autoSemi = false;
+
+    return LEXICAL_ERROR;
+}
+
+\'[^'\n]* {
+    Logger::Error(
+        "Unclosed rune literal '" +
+        string(yytext) +
+        "' at line " +
+        std::to_string(yylineno)
+    );
+
+    autoSemi = false;
+
+    return LEXICAL_ERROR;
 }
 
     /* ---------- Стороковые литералы ---------- */
@@ -473,41 +466,61 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 <STRING>\" {
-   
-   if (!stringInvalid) {
-        Logger::Value(
-            "STRING_LITERAL",
-            buffer.Get()
-        );
-
-        autoSemi = true;
-    }
-    else {
-        autoSemi = false;
-    }
 
     BEGIN(INITIAL);
+
+    if (stringInvalid) {
+        autoSemi = false;
+        return LEXICAL_ERROR;
+    }
+
+    string value = buffer.Get();
+
+    Logger::Value(
+        "STRING_LITERAL",
+        value
+    );
+
+    yylval.stringValue =
+        new std::string(value);
+
+    autoSemi = true;
+
+    return STRING_LITERAL;
 }
 
 <STRING>\n {
     Logger::Error(
         "Unclosed string literal at line " +
-        std::to_string(buffer.GetStartLine())
+        std::to_string(
+            buffer.GetStartLine()
+        )
     );
 
     buffer.Reset(yylineno);
+
+    stringInvalid = false;
     autoSemi = false;
 
     BEGIN(INITIAL);
+
+    return LEXICAL_ERROR;
 }
 
 <STRING><<EOF>> {
     Logger::Error(
         "Unclosed string literal at line " +
-        std::to_string(buffer.GetStartLine())
+        std::to_string(
+            buffer.GetStartLine()
+        )
     );
 
-    yyterminate();
+    stringInvalid = false;
+    autoSemi = false;
+
+    BEGIN(INITIAL);
+
+    return LEXICAL_ERROR;
 }
 
 <STRING>[\200-\377] {
@@ -540,29 +553,43 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 <RAW_STRING>` {
-     if (!rawStringInvalid) {
-        Logger::Value(
-            "RAW_STRING_LITERAL",
-            buffer.Get()
-        );
-
-        autoSemi = true;
-    }
-    else {
-        autoSemi = false;
-    }
 
     BEGIN(INITIAL);
-}
 
+    if (rawStringInvalid) {
+        autoSemi = false;
+        return LEXICAL_ERROR;
+    }
+
+    string value = buffer.Get();
+
+    Logger::Value(
+        "RAW_STRING_LITERAL",
+        value
+    );
+
+    yylval.stringValue =
+        new std::string(value);
+
+    autoSemi = true;
+
+    return RAW_STRING_LITERAL;
+}
 
 <RAW_STRING><<EOF>> {
     Logger::Error(
         "Unclosed raw string literal at line " +
-        std::to_string(buffer.GetStartLine())
+        std::to_string(
+            buffer.GetStartLine()
+        )
     );
 
-    yyterminate();
+    rawStringInvalid = false;
+    autoSemi = false;
+
+    BEGIN(INITIAL);
+
+    return LEXICAL_ERROR;
 }
 
 <RAW_STRING>[\200-\377] {
@@ -576,125 +603,56 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 
     /* ---------- Арифметические операторы ---------- */
 
-"+" {
-    Logger::Token("PLUS");
-    autoSemi = false;
-}
-
-"-" {
-    Logger::Token("MINUS");
-    autoSemi = false;
-}
-
-"*" {
-    Logger::Token("MULTIPLY");
-    autoSemi = false;
-}
-
-"/" {
-    Logger::Token("DIVIDE");
-    autoSemi = false;
-}
-
-"%" {
-    Logger::Token("MODULO");
-    autoSemi = false;
-}
+"+"   { RETURN_TOKEN(PLUS, false); }
+"-"   { RETURN_TOKEN(MINUS, false); }
+"*"   { RETURN_TOKEN(MULTIPLY, false); }
+"/"   { RETURN_TOKEN(DIVIDE, false); }
+"%"   { RETURN_TOKEN(MODULO, false); }
 
     /* ---------- Побитовые операторы ---------- */
 
-"&" {
-    Logger::Token("BIT_AND");
-    autoSemi = false;
-}
-
-"|" {
-    Logger::Token("BIT_OR");
-    autoSemi = false;
-}
-
-"^" {
-    Logger::Token("BIT_XOR");
-    autoSemi = false;
-}
-
-"&^" {
-    Logger::Token("BIT_CLEAR");
-    autoSemi = false;
-}
+"&"   { RETURN_TOKEN(BIT_AND, false); }
+"|"   { RETURN_TOKEN(BIT_OR, false); }
+"^"   { RETURN_TOKEN(BIT_XOR, false); }
+"&^"  { RETURN_TOKEN(BIT_CLEAR, false); }
 
     /* ---------- Операторы сдвига ---------- */
 
-"<<" {
-    Logger::Token("LEFT_SHIFT");
-    autoSemi = false;
-}
-
-">>" {
-    Logger::Token("RIGHT_SHIFT");
-    autoSemi = false;
-}
+"<<"  { RETURN_TOKEN(LEFT_SHIFT, false); }
+">>"  { RETURN_TOKEN(RIGHT_SHIFT, false); }
 
     /* ---------- Логические операторы ---------- */
 
-"&&" {
-    Logger::Token("LOGICAL_AND");
-    autoSemi = false;
-}
-
-"||" {
-    Logger::Token("LOGICAL_OR");
-    autoSemi = false;
-}
-
-"!" {
-    Logger::Token("LOGICAL_NOT");
-    autoSemi = false;
-}
+"&&"  { RETURN_TOKEN(LOGICAL_AND, false); }
+"||"  { RETURN_TOKEN(LOGICAL_OR, false); }
+"!"   { RETURN_TOKEN(LOGICAL_NOT, false); }
 
     /* ---------- Операторы сравнения ---------- */
 
-"==" {
-    Logger::Token("EQUAL");
-    autoSemi = false;
-}
-
-"!=" {
-    Logger::Token("NOT_EQUAL");
-    autoSemi = false;
-}
-
-"<" {
-    Logger::Token("LESS");
-    autoSemi = false;
-}
-
-"<=" {
-    Logger::Token("LESS_EQUAL");
-    autoSemi = false;
-}
-
-">" {
-    Logger::Token("GREATER");
-    autoSemi = false;
-}
-
-">=" {
-    Logger::Token("GREATER_EQUAL");
-    autoSemi = false;
-}
+"=="  { RETURN_TOKEN(EQUAL, false); }
+"!="  { RETURN_TOKEN(NOT_EQUAL, false); }
+"<"   { RETURN_TOKEN(LESS, false); }
+"<="  { RETURN_TOKEN(LESS_EQUAL, false); }
+">"   { RETURN_TOKEN(GREATER, false); }
+">="  { RETURN_TOKEN(GREATER_EQUAL, false); }
 
     /* ---------- Идентификаторы ---------- */
 
 {IDENTIFIER} {
+    string value = yytext;
+
     Logger::Value(
         "IDENTIFIER",
-        string(yytext)
+        value
     );
 
-    autoSemi = true;
-}
+    yylval.stringValue =
+        new std::string(value);
 
+    autoSemi = true;
+
+    return IDENTIFIER;
+}
 
     /* ---------- пробелы ---------- */
 [ \t\r]+ {
@@ -704,8 +662,10 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
     /* ---------- Перевод строки ---------- */
 \n {
     if (autoSemi) {
-        Logger::Token("SEMICOLON");
-        autoSemi = false;
+        RETURN_TOKEN(
+            SEMICOLON,
+            false
+        );
     }
 }
 
@@ -736,191 +696,110 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 
 <COMMENT>\n {
     if (autoSemi) {
-        Logger::Token("SEMICOLON");
-        autoSemi = false;
+        RETURN_TOKEN(
+            SEMICOLON,
+            false
+        );
     }
 }
+
 <COMMENT><<EOF>> {
     Logger::Error(
         "Unclosed multi-line comment on line " +
         std::to_string(yylineno)
     );
 
-    yyterminate();
+    autoSemi = false;
+
+    BEGIN(INITIAL);
+
+    return LEXICAL_ERROR;
 }
 
     /* ---------- Операторы присваивания ---------- */
 
-"=" {
-    Logger::Token("ASSIGN");
-    autoSemi = false;
-}
+"="   { RETURN_TOKEN(ASSIGN, false); }
 
-"+=" {
-    Logger::Token("PLUS_ASSIGN");
-    autoSemi = false;
-}
+"+="  { RETURN_TOKEN(PLUS_ASSIGN, false); }
+"-="  { RETURN_TOKEN(MINUS_ASSIGN, false); }
+"*="  { RETURN_TOKEN(MULTIPLY_ASSIGN, false); }
+"/="  { RETURN_TOKEN(DIVIDE_ASSIGN, false); }
+"%="  { RETURN_TOKEN(MODULO_ASSIGN, false); }
 
-"-=" {
-    Logger::Token("MINUS_ASSIGN");
-    autoSemi = false;
-}
+"&="  { RETURN_TOKEN(BIT_AND_ASSIGN, false); }
+"|="  { RETURN_TOKEN(BIT_OR_ASSIGN, false); }
+"^="  { RETURN_TOKEN(BIT_XOR_ASSIGN, false); }
 
-"*=" {
-    Logger::Token("MULTIPLY_ASSIGN");
-    autoSemi = false;
-}
+"<<=" { RETURN_TOKEN(LEFT_SHIFT_ASSIGN, false); }
+">>=" { RETURN_TOKEN(RIGHT_SHIFT_ASSIGN, false); }
 
-"/=" {
-    Logger::Token("DIVIDE_ASSIGN");
-    autoSemi = false;
-}
-
-"%=" {
-    Logger::Token("MODULO_ASSIGN");
-    autoSemi = false;
-}
-
-"&=" {
-    Logger::Token("BIT_AND_ASSIGN");
-    autoSemi = false;
-}
-
-"|=" {
-    Logger::Token("BIT_OR_ASSIGN");
-    autoSemi = false;
-}
-
-"^=" {
-    Logger::Token("BIT_XOR_ASSIGN");
-    autoSemi = false;
-}
-
-"<<=" {
-    Logger::Token("LEFT_SHIFT_ASSIGN");
-    autoSemi = false;
-}
-
-">>=" {
-    Logger::Token("RIGHT_SHIFT_ASSIGN");
-    autoSemi = false;
-}
-
-"&^=" {
-    Logger::Token("BIT_CLEAR_ASSIGN");
-    autoSemi = false;
-}
+"&^=" { RETURN_TOKEN(BIT_CLEAR_ASSIGN, false); }
 
     /* ---------- Короткое объявление ---------- */
 
-":=" {
-    Logger::Token("DECLARE_ASSIGN");
-    autoSemi = false;
-}
+":="  { RETURN_TOKEN(DECLARE_ASSIGN, false); }
 
     /* ---------- Инкремент / декремент ---------- */
 
-"++" {
-    Logger::Token("INCREMENT");
-    autoSemi = true;
-}
-
-"--" {
-    Logger::Token("DECREMENT");
-    autoSemi = true;
-}
+"++"  { RETURN_TOKEN(INCREMENT, true); }
+"--"  { RETURN_TOKEN(DECREMENT, true); }
 
     /* ---------- Оператор канала ---------- */
 
-"<-" {
-    Logger::Token("CHANNEL_ARROW");
-    autoSemi = false;
-}
+"<-"  { RETURN_TOKEN(CHANNEL_ARROW, false); }
 
     /* ---------- Скобки ---------- */
 
-"(" {
-    Logger::Token("LEFT_PAREN");
-    autoSemi = false;
-}
+"(" { RETURN_TOKEN(LEFT_PAREN, false); }
+")" { RETURN_TOKEN(RIGHT_PAREN, true); }
 
-")" {
-    Logger::Token("RIGHT_PAREN");
-    autoSemi = true;
-}
+"[" { RETURN_TOKEN(LEFT_BRACKET, false); }
+"]" { RETURN_TOKEN(RIGHT_BRACKET, true); }
 
-"[" {
-    Logger::Token("LEFT_BRACKET");
-    autoSemi = false;
-}
-
-"]" {
-    Logger::Token("RIGHT_BRACKET");
-    autoSemi = true;
-}
-
-"{" {
-    Logger::Token("LEFT_BRACE");
-    autoSemi = false;
-}
-
-"}" {
-    Logger::Token("RIGHT_BRACE");
-    autoSemi = true;
-}
-
+"{" { RETURN_TOKEN(LEFT_BRACE, false); }
+"}" { RETURN_TOKEN(RIGHT_BRACE, true); }
 
     /* ---------- Пунктуация ---------- */
 
-"," {
-    Logger::Token("COMMA");
-    autoSemi = false;
-}
-
-":" {
-    Logger::Token("COLON");
-    autoSemi = false;
-}
-
-"." {
-    Logger::Token("DOT");
-    autoSemi = false;
-}
-
-"..." {
-    Logger::Token("ELLIPSIS");
-    autoSemi = false;
-}
+","   { RETURN_TOKEN(COMMA, false); }
+":"   { RETURN_TOKEN(COLON, false); }
+"..." { RETURN_TOKEN(ELLIPSIS, false); }
+"."   { RETURN_TOKEN(DOT, false); }
 
     /* ---------- Тильда ---------- */
 
-"~" {
-    Logger::Token("TILDE");
-    autoSemi = false;
-}
+"~"   { RETURN_TOKEN(TILDE, false); }
 
     /* ---------- Точка с запятой ---------- */
-";" {
-    Logger::Token("SEMICOLON");
-    autoSemi = false;
-}
+
+";"   { RETURN_TOKEN(SEMICOLON, false); }
 
     /* если файл закончился после токена, а мы должны были вставить ;, то вставляем */
 <INITIAL><<EOF>> {
+
     if (autoSemi) {
-        Logger::Token("SEMICOLON");
-        autoSemi = false;
+        RETURN_TOKEN(
+            SEMICOLON,
+            false
+        );
     }
 
-    yyterminate();
+    return 0;
 }
 
     /* ---------- Отлавливаем все остальное как ошибку ---------- */
+
 . {
     Logger::Error(
-        "Unknown symbol '" + string(yytext) +
-        "' at line " + std::to_string(yylineno)
+        "Unknown symbol '" +
+        string(yytext) +
+        "' at line " +
+        std::to_string(yylineno)
     );
+
+    autoSemi = false;
+
+    return LEXICAL_ERROR;
 }
 
 %%
@@ -933,9 +812,14 @@ int main(int argc, char* argv[])
 #endif
 
     if (argc > 1) {
-        yyin = fopen(argv[1], "rb");
+
+        yyin = fopen(
+            argv[1],
+            "rb"
+        );
 
         if (yyin == nullptr) {
+
             std::cerr
                 << "Cannot open file: "
                 << argv[1]
@@ -945,11 +829,11 @@ int main(int argc, char* argv[])
         }
     }
 
-    yylex();
+    int result = yyparse();
 
     if (argc > 1) {
         fclose(yyin);
     }
 
-    return 0;
+    return result;
 }
