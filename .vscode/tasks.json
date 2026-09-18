@@ -2,9 +2,15 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build lexer",
+            "label": "[PARSER] build [lexer debug]",
             "type": "shell",
-            "command": "win_flex -o lexer/lex.yy.cpp lexer/lexer.l; if ($LASTEXITCODE -eq 0) { g++ lexer/lex.yy.cpp lexer/extension/logger/Logger.cpp lexer/extension/buffer/Buffer.cpp lexer/extension/Parser/Parser.cpp -o lexer/lexer.exe 2>&1 }",
+            "command": "bison -d -o parser/parser.tab.cpp parser/parser.y; if ($LASTEXITCODE -eq 0) { win_flex -o lexer/lex.yy.cpp lexer/lexer.l }; if ($LASTEXITCODE -eq 0) { g++ -DLEXER_DEBUG -DPARSER_DEBUG parser/parser.tab.cpp parser/extension/logger/ParserLogger.cpp lexer/lex.yy.cpp lexer/extension/logger/Logger.cpp lexer/extension/buffer/Buffer.cpp lexer/extension/Parser/Parser.cpp -o parser/parser.exe 2>&1 }",
+            "problemMatcher": "$gcc"
+        },
+         {
+            "label": "[PARSER] build",
+            "type": "shell",
+            "command": "bison -d -o parser/parser.tab.cpp parser/parser.y; if ($LASTEXITCODE -eq 0) { win_flex -o lexer/lex.yy.cpp lexer/lexer.l }; if ($LASTEXITCODE -eq 0) { g++ -DPARSER_DEBUG parser/parser.tab.cpp parser/extension/logger/ParserLogger.cpp lexer/lex.yy.cpp lexer/extension/logger/Logger.cpp lexer/extension/buffer/Buffer.cpp lexer/extension/Parser/Parser.cpp -o parser/parser.exe 2>&1 }",
             "problemMatcher": "$gcc",
             "group": {
                 "kind": "build",
@@ -12,26 +18,31 @@
             }
         },
         {
-            "label": "Run lexer",
+            "label": "[PARSER] run",
             "type": "shell",
-            "command": ".\\lexer\\lexer.exe",
-            "dependsOn": "Build lexer",
+            "command": ".\\parser\\parser.exe",
+            "dependsOn": "Build parser",
             "problemMatcher": []
         },
         {
-            "label": "Test all lexer",
+            "label": "[PARSER] test all",
             "type": "shell",
-            "command": "Get-ChildItem tests\\lexer\\*.txt | ForEach-Object { Write-Host \"`n=== $($_.Name) ===\"; .\\lexer\\lexer.exe $_.FullName }",
-            "dependsOn": "Build lexer",
+            "command": "$files = @(Get-ChildItem tests\\parser\\*.go -Recurse); if ($files.Count -eq 0) { Write-Host 'No parser tests found'; exit 1 }; foreach ($file in $files) { $relative = Resolve-Path -Relative $file.FullName; Write-Host \"`n==================================================\"; Write-Host \"TEST: $relative\"; Write-Host \"==================================================\"; .\\parser\\parser.exe $file.FullName; Write-Host \"Exit code: $LASTEXITCODE\" }",
+            "dependsOn": "Build parser",
             "problemMatcher": []
         },
         {
-            "label": "Test selected lexer",
+            "label": "[PARSER] select test",
             "type": "shell",
-            "command": "$files = @(Get-ChildItem tests\\lexer\\*.txt -Recurse); if ($files.Count -eq 0) { Write-Host 'No lexer tests found'; exit 1 }; for ($i = 0; $i -lt $files.Count; $i++) { $relative = Resolve-Path -Relative $files[$i].FullName; Write-Host \"[$($i + 1)] $relative\" }; $choice = [int](Read-Host 'Select test') - 1; if ($choice -lt 0 -or $choice -ge $files.Count) { Write-Host 'Invalid selection'; exit 1 }; $selected = Resolve-Path -Relative $files[$choice].FullName; Write-Host \"`n=== $selected ===\"; .\\lexer\\lexer.exe $files[$choice].FullName",
-            "dependsOn": "Build lexer",
+            "command": "$files = @(Get-ChildItem tests\\parser\\*.go -Recurse); if ($files.Count -eq 0) { Write-Host 'No parser tests found'; exit 1 }; for ($i = 0; $i -lt $files.Count; $i++) { $relative = Resolve-Path -Relative $files[$i].FullName; Write-Host \"[$($i + 1)] $relative\" }; $choice = [int](Read-Host 'Select test') - 1; if ($choice -lt 0 -or $choice -ge $files.Count) { Write-Host 'Invalid selection'; exit 1 }; $selected = Resolve-Path -Relative $files[$choice].FullName; Write-Host \"`n==================================================\"; Write-Host \"TEST: $selected\"; Write-Host \"==================================================\"; .\\parser\\parser.exe $files[$choice].FullName; Write-Host \"`nExit code: $LASTEXITCODE\"",
+            "dependsOn": "Build parser",
+            "problemMatcher": []
+        },
+        {
+            "label": "[PARSER] generate",
+            "type": "shell",
+            "command": "bison -Wall -Wcounterexamples -d -o parser/parser.tab.cpp parser/parser.y",
             "problemMatcher": []
         }
     ]
-
 }
