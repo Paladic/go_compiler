@@ -608,8 +608,11 @@ STRING_CHAR         [^\\\"\n\r]
 }
 
 <COMMENT>\n {
+    if (autoSemi) {
+        Logger::Value("PUNCTUATION", ";");
+        autoSemi = false;
+    }
 }
-
 <COMMENT><<EOF>> {
     Logger::Error(
         "Unclosed multi-line comment on line " +
