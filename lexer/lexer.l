@@ -93,9 +93,12 @@ UNICODE_4_ESCAPE    \\u[0-9a-fA-F]{4}
 UNICODE_8_ESCAPE    \\U[0-9a-fA-F]{8}
 
 RUNE_ESCAPE         (\\[abfnrtv\\']|{OCTAL_BYTE_ESCAPE}|{HEX_BYTE_ESCAPE}|{UNICODE_4_ESCAPE}|{UNICODE_8_ESCAPE})
-RUNE_CHAR           [^\\'\n\r]
+
+ASCII_RUNE_CHAR     [^\\'\n\r\200-\377]
+RUNE_CHAR           ({ASCII_RUNE_CHAR}|{UTF8_CHAR})
 
 RUNE_LITERAL        \'({RUNE_CHAR}|{RUNE_ESCAPE})\'
+
 
 /* ---------- Стороковые литералы  ---------- */
 
