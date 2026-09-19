@@ -28,14 +28,14 @@
             "label": "[PARSER] test all",
             "type": "shell",
             "command": "$files = @(Get-ChildItem tests\\parser\\*.go -Recurse); if ($files.Count -eq 0) { Write-Host 'No parser tests found'; exit 1 }; foreach ($file in $files) { $relative = Resolve-Path -Relative $file.FullName; Write-Host \"`n==================================================\"; Write-Host \"TEST: $relative\"; Write-Host \"==================================================\"; .\\parser\\parser.exe $file.FullName; Write-Host \"Exit code: $LASTEXITCODE\" }",
-            "dependsOn": "Build parser",
+            "dependsOn": "[PARSER] build",
             "problemMatcher": []
         },
         {
             "label": "[PARSER] select test",
             "type": "shell",
             "command": "$files = @(Get-ChildItem tests\\parser\\*.go -Recurse); if ($files.Count -eq 0) { Write-Host 'No parser tests found'; exit 1 }; for ($i = 0; $i -lt $files.Count; $i++) { $relative = Resolve-Path -Relative $files[$i].FullName; Write-Host \"[$($i + 1)] $relative\" }; $choice = [int](Read-Host 'Select test') - 1; if ($choice -lt 0 -or $choice -ge $files.Count) { Write-Host 'Invalid selection'; exit 1 }; $selected = Resolve-Path -Relative $files[$choice].FullName; Write-Host \"`n==================================================\"; Write-Host \"TEST: $selected\"; Write-Host \"==================================================\"; .\\parser\\parser.exe $files[$choice].FullName; Write-Host \"`nExit code: $LASTEXITCODE\"",
-            "dependsOn": "Build parser",
+            "dependsOn": "[PARSER] build",
             "problemMatcher": []
         },
         {

@@ -2,11 +2,15 @@
 
 %{
 
-// все варианты идентификаторов реализовывать не надо
-// супер длинные числа реализовывать не надо
-// Решить как мы хотим сделать в слуычае если не закрыт строковый литерал: ставить в конце строки самим ;, либо считать весь текст ниже текстом
+/* 
+Нюансы:
+1. все варианты идентификаторов реализовывать не надо - это на доп. баллы
+2. супер длинные числа реализовывать не надо - это на доп. баллы
+3. Момент с a multiline-comment + b - будет a; +b;
 
-// глобальные переменные, бибилотеки, функции и т.д.
+ */
+
+/* глобальные переменные, бибилотеки, функции и т.д. */
 
 #include <cstdio>
 #include <iostream>
@@ -14,6 +18,8 @@
 #include "extension/logger/logger.h"
 #include "extension/Parser/Parser.h"
 #include "extension/buffer/Buffer.h"
+#include "../parser/parser.tab.hpp"
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -31,11 +37,42 @@ bool rawStringInvalid = false;
 /* Флаг автоматической вставки точки с запятой */
 bool autoSemi = false;
 
-#define RETURN_TOKEN(token, semi)   \
-    do {                            \
-        Logger::Token(#token);      \
-        autoSemi = (semi);          \
-        return token;               \
+#define RETURN_TOKEN(token, semi)       \
+    do {                                \
+        Logger::Token(#token);          \
+        autoSemi = (semi);              \
+        return token;                   \
+    } while (0)
+
+
+#define RETURN_INTEGER(token, expr, semi)   \
+    do {                                    \
+        long long value = (expr);           \
+        Logger::Value(#token, value);       \
+        yylval.integerValue = value;        \
+        autoSemi = (semi);                  \
+        return token;                       \
+    } while (0)
+
+
+#define RETURN_FLOAT(token, expr, semi)     \
+    do {                                    \
+        double value = (expr);              \
+        Logger::Value(#token, value);       \
+        yylval.floatValue = value;          \
+        autoSemi = (semi);                  \
+        return token;                       \
+    } while (0)
+
+
+#define RETURN_STRING(token, expr, semi)    \
+    do {                                    \
+        std::string value = (expr);         \
+        Logger::Value(#token, value);       \
+        yylval.stringValue =                \
+            new std::string(value);         \
+        autoSemi = (semi);                  \
+        return token;                       \
     } while (0)
 
 %}
@@ -166,146 +203,31 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 
     /* ---------- Мнимые литералы ---------- */
 
-{IMAGINARY_LITERAL} {
-    double value =
-        Parser::Imaginary(yytext);
-
-    Logger::Value(
-        "IMAGINARY_LITERAL",
-        value
-    );
-
-    yylval.floatValue = value;
-
-    autoSemi = true;
-
-    return IMAGINARY_LITERAL;
-}
-
+{IMAGINARY_LITERAL} {RETURN_FLOAT(IMAGINARY_LITERAL, Parser::Imaginary(yytext), true);}
+    
     /* ---------- Литералы с плавающей точкой ---------- */
 
-{HEX_FLOAT} {
-    double value =
-        Parser::Float(yytext);
+{HEX_FLOAT} { RETURN_FLOAT(HEX_FLOAT_LITERAL, Parser::Float(yytext), true); }
 
-    Logger::Value(
-        "HEX_FLOAT_LITERAL",
-        value
-    );
-
-    yylval.floatValue = value;
-
-    autoSemi = true;
-
-    return HEX_FLOAT_LITERAL;
-}
-
-{DECIMAL_FLOAT} {
-    double value =
-        Parser::Float(yytext);
-
-    Logger::Value(
-        "FLOAT_LITERAL",
-        value
-    );
-
-    yylval.floatValue = value;
-
-    autoSemi = true;
-
-    return FLOAT_LITERAL;
-}
+{DECIMAL_FLOAT} { RETURN_FLOAT(FLOAT_LITERAL, Parser::Float(yytext), true); }
 
     /* ---------- Целочисленные литералы ---------- */
+    
+{BINARY_LITERAL} { RETURN_INTEGER(BINARY_LITERAL, Parser::Integer(yytext), true); }
 
-{BINARY_LITERAL} {
-    long long value =
-        Parser::Integer(yytext);
+{OCTAL_LITERAL} {RETURN_INTEGER(OCTAL_LITERAL, Parser::Integer(yytext), true); }
 
-    Logger::Value(
-        "BINARY_LITERAL",
-        value
-    );
+{OLD_OCTAL_LITERAL} {RETURN_INTEGER(OCTAL_LITERAL, Parser::Integer(yytext), true); }
 
-    yylval.integerValue = value;
+{HEX_LITERAL} {RETURN_INTEGER(HEX_LITERAL, Parser::Integer(yytext), true); }
 
-    autoSemi = true;
-
-    return BINARY_LITERAL;
-}
-
-{OCTAL_LITERAL} {
-    long long value =
-        Parser::Integer(yytext);
-
-    Logger::Value(
-        "OCTAL_LITERAL",
-        value
-    );
-
-    yylval.integerValue = value;
-
-    autoSemi = true;
-
-    return OCTAL_LITERAL;
-}
-
-{OLD_OCTAL_LITERAL} {
-    long long value =
-        Parser::Integer(yytext);
-
-    Logger::Value(
-        "OCTAL_LITERAL",
-        value
-    );
-
-    yylval.integerValue = value;
-
-    autoSemi = true;
-
-    return OCTAL_LITERAL;
-}
-
-{HEX_LITERAL} {
-    long long value =
-        Parser::Integer(yytext);
-
-    Logger::Value(
-        "HEX_LITERAL",
-        value
-    );
-
-    yylval.integerValue = value;
-
-    autoSemi = true;
-
-    return HEX_LITERAL;
-}
-
-{DECIMAL_LITERAL} {
-    long long value =
-        Parser::Integer(yytext);
-
-    Logger::Value(
-        "DECIMAL_LITERAL",
-        value
-    );
-
-    yylval.integerValue = value;
-
-    autoSemi = true;
-
-    return DECIMAL_LITERAL;
-}
-
+{DECIMAL_LITERAL} { RETURN_INTEGER(DECIMAL_LITERAL, Parser::Integer(yytext), true); }
+    
     /* ---------- ошибки ------------- */
+
 {BINARY_CANDIDATE} {
-    Logger::Error(
-        "Invalid binary literal '" +
-        string(yytext) +
-        "' at line " +
-        std::to_string(yylineno)
-    );
+
+    Logger::Error("Invalid binary literal '" + string(yytext) + "' at line " + std::to_string(yylineno));
 
     autoSemi = false;
 
@@ -313,12 +235,8 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 {OCTAL_CANDIDATE} {
-    Logger::Error(
-        "Invalid octal literal '" +
-        string(yytext) +
-        "' at line " +
-        std::to_string(yylineno)
-    );
+
+    Logger::Error("Invalid octal literal '" + string(yytext) + "' at line " + std::to_string(yylineno));
 
     autoSemi = false;
 
@@ -326,12 +244,8 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 {HEX_CANDIDATE} {
-    Logger::Error(
-        "Invalid hexadecimal literal '" +
-        string(yytext) +
-        "' at line " +
-        std::to_string(yylineno)
-    );
+   
+   Logger::Error("Invalid hexadecimal literal '" + string(yytext) + "' at line " + std::to_string(yylineno));
 
     autoSemi = false;
 
@@ -339,12 +253,8 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 {DECIMAL_CANDIDATE} {
-    Logger::Error(
-        "Invalid numeric literal '" +
-        string(yytext) +
-        "' at line " +
-        std::to_string(yylineno)
-    );
+   
+   Logger::Error("Invalid numeric literal '" + string(yytext) + "' at line " + std::to_string(yylineno));
 
     autoSemi = false;
 
@@ -352,42 +262,24 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
     /* ---------- Символьные литералы ---------- */
+
 {RUNE_LITERAL} {
-    long long value =
-        Parser::Rune(yytext);
+    long long value = Parser::Rune(yytext);
 
     if (!Parser::IsValidUnicodeCodePoint(value)) {
-        Logger::Error(
-            "Invalid rune literal '" +
-            string(yytext) +
-            "' at line " +
-            std::to_string(yylineno)
-        );
+        
+        Logger::Error("Invalid rune literal '" + string(yytext) + "' at line " + std::to_string(yylineno));
 
         autoSemi = false;
-
         return LEXICAL_ERROR;
     }
 
-    Logger::Value(
-        "RUNE_LITERAL",
-        value
-    );
-
-    yylval.integerValue = value;
-
-    autoSemi = true;
-
-    return RUNE_LITERAL;
+    RETURN_INTEGER(RUNE_LITERAL, value, true);
 }
 
 \'[^'\n]*\' {
-    Logger::Error(
-        "Invalid rune literal '" +
-        string(yytext) +
-        "' at line " +
-        std::to_string(yylineno)
-    );
+   
+   Logger::Error("Invalid rune literal '" + string(yytext) + "' at line " + std::to_string(yylineno));
 
     autoSemi = false;
 
@@ -395,12 +287,8 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 \'[^'\n]* {
-    Logger::Error(
-        "Unclosed rune literal '" +
-        string(yytext) +
-        "' at line " +
-        std::to_string(yylineno)
-    );
+    
+    Logger::Error("Unclosed rune literal '" + string(yytext) + "' at line " + std::to_string(yylineno));
 
     autoSemi = false;
 
@@ -460,9 +348,9 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 
 <STRING>\\ {
     /*
-        возможен в случае если находится в конце строки 
+        при hello\\n, где \n не символ а enter.  
     */
-   // TODO Add new line
+
 }
 
 <STRING>\" {
@@ -474,28 +362,13 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
         return LEXICAL_ERROR;
     }
 
-    string value = buffer.Get();
+    RETURN_STRING(STRING_LITERAL, buffer.Get(), true);
 
-    Logger::Value(
-        "STRING_LITERAL",
-        value
-    );
-
-    yylval.stringValue =
-        new std::string(value);
-
-    autoSemi = true;
-
-    return STRING_LITERAL;
 }
 
 <STRING>\n {
-    Logger::Error(
-        "Unclosed string literal at line " +
-        std::to_string(
-            buffer.GetStartLine()
-        )
-    );
+    
+    Logger::Error("Unclosed string literal at line " + std::to_string(buffer.GetStartLine()));
 
     buffer.Reset(yylineno);
 
@@ -508,12 +381,8 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 <STRING><<EOF>> {
-    Logger::Error(
-        "Unclosed string literal at line " +
-        std::to_string(
-            buffer.GetStartLine()
-        )
-    );
+    
+    Logger::Error("Unclosed string literal at line " + std::to_string(buffer.GetStartLine()));
 
     stringInvalid = false;
     autoSemi = false;
@@ -524,10 +393,8 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 <STRING>[\200-\377] {
-    Logger::Error(
-        "Invalid UTF-8 sequence at line " +
-        std::to_string(yylineno)
-    );
+    
+    Logger::Error("Invalid UTF-8 sequence at line " + std::to_string(yylineno));
 
     stringInvalid = true;
 }
@@ -553,7 +420,7 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 <RAW_STRING>` {
-
+    
     BEGIN(INITIAL);
 
     if (rawStringInvalid) {
@@ -561,28 +428,13 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
         return LEXICAL_ERROR;
     }
 
-    string value = buffer.Get();
+    RETURN_STRING(RAW_STRING_LITERAL, buffer.Get(), true);
 
-    Logger::Value(
-        "RAW_STRING_LITERAL",
-        value
-    );
-
-    yylval.stringValue =
-        new std::string(value);
-
-    autoSemi = true;
-
-    return RAW_STRING_LITERAL;
 }
 
 <RAW_STRING><<EOF>> {
-    Logger::Error(
-        "Unclosed raw string literal at line " +
-        std::to_string(
-            buffer.GetStartLine()
-        )
-    );
+    
+    Logger::Error("Unclosed raw string literal at line " + std::to_string(buffer.GetStartLine()));
 
     rawStringInvalid = false;
     autoSemi = false;
@@ -593,10 +445,8 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 <RAW_STRING>[\200-\377] {
-    Logger::Error(
-        "Invalid UTF-8 sequence at line " +
-        std::to_string(yylineno)
-    );
+    
+    Logger::Error("Invalid UTF-8 sequence at line " + std::to_string(yylineno));
 
     rawStringInvalid = true;
 }
@@ -638,21 +488,7 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 
     /* ---------- Идентификаторы ---------- */
 
-{IDENTIFIER} {
-    string value = yytext;
-
-    Logger::Value(
-        "IDENTIFIER",
-        value
-    );
-
-    yylval.stringValue =
-        new std::string(value);
-
-    autoSemi = true;
-
-    return IDENTIFIER;
-}
+{IDENTIFIER} { RETURN_STRING(IDENTIFIER, string(yytext), true); }
 
     /* ---------- пробелы ---------- */
 [ \t\r]+ {
@@ -704,10 +540,8 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 <COMMENT><<EOF>> {
-    Logger::Error(
-        "Unclosed multi-line comment on line " +
-        std::to_string(yylineno)
-    );
+    
+    Logger::Error("Unclosed multi-line comment on line " + std::to_string(yylineno));
 
     autoSemi = false;
 
@@ -790,12 +624,8 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
     /* ---------- Отлавливаем все остальное как ошибку ---------- */
 
 . {
-    Logger::Error(
-        "Unknown symbol '" +
-        string(yytext) +
-        "' at line " +
-        std::to_string(yylineno)
-    );
+    
+    Logger::Error("Unknown symbol '" + string(yytext) + "' at line " + std::to_string(yylineno));
 
     autoSemi = false;
 
