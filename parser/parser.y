@@ -3,6 +3,7 @@
 }
 
 %define lr.type canonical-lr
+%define parse.trace
 
 %{
 #include <string>
@@ -11,6 +12,7 @@
 
 extern int yylex();
 extern int yylineno;
+extern int yydebug;
 
 void yyerror(const char* message);
 %}
@@ -173,6 +175,18 @@ void yyerror(const char* message);
 
 %token LEXICAL_ERROR
 
+/* ---------- Приоритеты операторов ---------- */
+
+%left LOGICAL_OR
+%left LOGICAL_AND
+
+%left EQUAL NOT_EQUAL LESS LESS_EQUAL GREATER GREATER_EQUAL
+
+%left PLUS MINUS BIT_OR BIT_XOR
+
+%left MULTIPLY DIVIDE MODULO LEFT_SHIFT RIGHT_SHIFT BIT_AND BIT_CLEAR
+
+%precedence UNARY
 
 /* очищаем строковые значения, если они удаляются */
 %destructor {
@@ -184,11 +198,10 @@ void yyerror(const char* message);
 %start program
 
 %%
-
 /* ---------- Корень программы ---------- */
 
 program:
-    package_clause SEMICOLON
+    package_clause SEMICOLON declarations
     {
         ParserLogger::Message(
             "program parsed successfully"
@@ -210,208 +223,219 @@ package_clause:
     }
 ;
 
+/* ---------- Список объявлений ---------- */
+
+declarations:
+      %empty
+    | declarations declaration SEMICOLON
+;
+
+/* ---------- Объявление ---------- */
+
+declaration:
+    variable_declaration
+;
+
+/* ---------- Переменная ---------- */
+
+variable_declaration:
+    KW_VAR IDENTIFIER ASSIGN expression
+    {
+        ParserLogger::Value(
+            "variable declaration",
+            *$2
+        );
+
+        delete $2;
+    }
+;
+
 /* ============================================================
    EXPRESSIONS
    ============================================================ */
 
-
-/* ---------- Общее выражение ---------- */
-
-/*
 expression:
-    TODO
+      primary_expression
+
+    /* ---------- Бинарные логические ---------- */
+
+    | expression LOGICAL_OR expression
+    | expression LOGICAL_AND expression
+
+
+    /* ---------- Сравнение ---------- */
+
+    | expression EQUAL expression
+    | expression NOT_EQUAL expression
+
+    | expression LESS expression
+    | expression LESS_EQUAL expression
+    | expression GREATER expression
+    | expression GREATER_EQUAL expression
+
+
+    /* ---------- Арифметика / побитовые ---------- */
+
+    | expression PLUS expression
+    | expression MINUS expression
+
+    | expression BIT_OR expression
+    | expression BIT_XOR expression
+
+    | expression MULTIPLY expression
+    | expression DIVIDE expression
+    | expression MODULO expression
+
+    | expression LEFT_SHIFT expression
+    | expression RIGHT_SHIFT expression
+
+    | expression BIT_AND expression
+    | expression BIT_CLEAR expression
+
+
+    /* ---------- Унарные ---------- */
+
+    | PLUS expression %prec UNARY
+    | MINUS expression %prec UNARY
+
+    | LOGICAL_NOT expression %prec UNARY
+    | BIT_XOR expression %prec UNARY
+
+    | MULTIPLY expression %prec UNARY
+    | BIT_AND expression %prec UNARY
+
+    | CHANNEL_ARROW expression %prec UNARY
 ;
-*/
-
-
-/* ---------- || ---------- */
-
-/*
-logical_or_expression:
-    TODO
-;
-*/
-
-
-/* ---------- && ---------- */
-
-/*
-logical_and_expression:
-    TODO
-;
-*/
-
-
-/* ---------- == != < <= > >= ---------- */
-
-/*
-comparison_expression:
-    TODO
-;
-*/
-
-
-/* ---------- + - | ^ ---------- */
-
-/*
-additive_expression:
-    TODO
-;
-*/
-
-
-/* ---------- * / % << >> & &^ ---------- */
-
-/*
-multiplicative_expression:
-    TODO
-;
-*/
-
-
-/* ---------- Унарные выражения ---------- */
-
-/*
-unary_expression:
-    TODO
-;
-*/
-
 
 /* ---------- Primary expression ---------- */
 
-/*
 primary_expression:
-    TODO
+      operand
+
+    /* obj.field */
+    | primary_expression DOT IDENTIFIER
+    {
+        delete $3;
+    }
+
+    /* foo(...) / obj.method(...) */
+    | primary_expression arguments
+
+    /* array[index] */
+    | primary_expression LEFT_BRACKET expression RIGHT_BRACKET
+
+    /* array[low:high] */
+    | primary_expression LEFT_BRACKET optional_expression
+      COLON optional_expression RIGHT_BRACKET
+
+    /* array[low:high:max] */
+    | primary_expression LEFT_BRACKET optional_expression
+      COLON expression
+      COLON expression RIGHT_BRACKET
+
+    /* x.(T) */
+    | primary_expression type_assertion
 ;
-*/
 
 
 /* ---------- Operand ---------- */
 
-/*
 operand:
-    TODO
+      literal
+
+    | IDENTIFIER
+    {
+        delete $1;
+    }
+
+    | LEFT_PAREN expression RIGHT_PAREN
 ;
-*/
+
+/* ---------- Operand ---------- */
+
 
 
 /* ============================================================
    LITERALS
    ============================================================ */
 
-/*
 literal:
-    TODO
+      integer_literal
+    | float_literal
+    | imaginary_literal
+    | rune_literal
+    | string_literal
+    | composite_literal
+    | function_literal
 ;
-*/
 
 
-/* ---------- Integer literals ---------- */
-
-/*
 integer_literal:
-    TODO
+      DECIMAL_LITERAL
+    | BINARY_LITERAL
+    | OCTAL_LITERAL
+    | HEX_LITERAL
 ;
-*/
 
 
-/* ---------- Float literals ---------- */
-
-/*
 float_literal:
-    TODO
+      FLOAT_LITERAL
+    | HEX_FLOAT_LITERAL
 ;
-*/
 
 
-/* ---------- Imaginary literal ---------- */
-
-/*
 imaginary_literal:
-    TODO
+    IMAGINARY_LITERAL
 ;
-*/
 
 
-/* ---------- Rune literal ---------- */
-
-/*
 rune_literal:
-    TODO
+    RUNE_LITERAL
 ;
-*/
 
 
-/* ---------- String literal ---------- */
-
-/*
 string_literal:
-    TODO
+      STRING_LITERAL
+    {
+        delete $1;
+    }
+
+    | RAW_STRING_LITERAL
+    {
+        delete $1;
+    }
 ;
-*/
 
-
-/* ============================================================
-   FUNCTION CALL
-   ============================================================ */
-
-/*
-function_call:
-    TODO
-;
-*/
 
 
 /* ---------- Аргументы вызова ---------- */
 
-/*
 arguments:
-    TODO
+      LEFT_PAREN RIGHT_PAREN
+
+    | LEFT_PAREN argument_list RIGHT_PAREN
+
+    | LEFT_PAREN argument_list COMMA RIGHT_PAREN
+
+    /* foo(args...) */
+    | LEFT_PAREN argument_list ELLIPSIS RIGHT_PAREN
+
+    | LEFT_PAREN argument_list ELLIPSIS COMMA RIGHT_PAREN
 ;
-*/
 
+/* ---------- Argument list ---------- */
 
-/* ============================================================
-   SELECTOR
-
-   obj.field
-   ============================================================ */
-
-/*
-selector:
-    TODO
+argument_list:
+      expression
+    | argument_list COMMA expression
 ;
-*/
 
+/* ---------- Optional expression ---------- */
 
-/* ============================================================
-   INDEX
-
-   array[index]
-   ============================================================ */
-
-/*
-index_expression:
-    TODO
+optional_expression:
+      %empty
+    | expression
 ;
-*/
-
-
-/* ============================================================
-   SLICE EXPRESSION
-
-   array[1:5]
-   array[:5]
-   array[1:]
-   array[:]
-   ============================================================ */
-
-/*
-slice_expression:
-    TODO
-;
-*/
 
 
 /* ============================================================
@@ -420,11 +444,9 @@ slice_expression:
    value.(Type)
    ============================================================ */
 
-/*
 type_assertion:
-    TODO
+    DOT LEFT_PAREN type RIGHT_PAREN
 ;
-*/
 
 
 /* ============================================================
@@ -432,31 +454,48 @@ type_assertion:
 
    Point{x: 10}
    []int{1, 2, 3}
+   map[string]int{"a": 1}
    ============================================================ */
 
-/*
 composite_literal:
-    TODO
+    composite_literal_type literal_value
 ;
-*/
 
+composite_literal_type:
+      type_name
+    | array_type
+    | slice_type
+    | map_type
+    | struct_type
 
-/* ---------- Элементы composite literal ---------- */
+    /* [...]int{1, 2, 3} */
+    | LEFT_BRACKET ELLIPSIS RIGHT_BRACKET type
+;
 
-/*
+literal_value:
+      LEFT_BRACE RIGHT_BRACE
+    | LEFT_BRACE literal_elements RIGHT_BRACE
+    | LEFT_BRACE literal_elements COMMA RIGHT_BRACE
+;
+
 literal_elements:
-    TODO
+      literal_element
+    | literal_elements COMMA literal_element
 ;
-*/
 
-
-/* ---------- Один элемент ---------- */
-
-/*
 literal_element:
-    TODO
+      expression
+
+    /* key: value / field: value */
+    | expression COLON expression
+
+    /* вложенный литерал без повторения типа:
+       [][]int{{1, 2}, {3, 4}}
+    */
+    | literal_value
+
+    | expression COLON literal_value
 ;
-*/
 
 
 /* ============================================================
@@ -467,51 +506,71 @@ literal_element:
    }
    ============================================================ */
 
-/*
 function_literal:
-    TODO
+    KW_FUNC function_signature function_body
 ;
-*/
 
 
 /* ============================================================
    IF
    ============================================================ */
 
-/*
 if_statement:
-    TODO
+      KW_IF expression block
+
+    | KW_IF expression block KW_ELSE block
+
+    | KW_IF expression block KW_ELSE if_statement
+
+    | KW_IF simple_statement SEMICOLON expression block
+
+    | KW_IF simple_statement SEMICOLON expression block KW_ELSE block
+
+    | KW_IF simple_statement SEMICOLON expression block KW_ELSE if_statement
 ;
-*/
 
 
 /* ============================================================
    FOR
    ============================================================ */
 
-/*
 for_statement:
-    TODO
-;
-*/
+      KW_FOR block
 
+    | KW_FOR expression block
+
+    | KW_FOR for_clause block
+
+    | KW_FOR range_clause block
+;
+
+/* ---------- Optional simple statement ---------- */
+
+optional_simple_statement:
+      %empty
+    | simple_statement
+;
 
 /* ---------- Классический for ---------- */
 
-/*
 for_clause:
-    TODO
+    optional_simple_statement
+    SEMICOLON
+    optional_expression
+    SEMICOLON
+    optional_simple_statement
 ;
-*/
 
 
 /* ---------- Range ---------- */
 
-/*
 range_clause:
-    TODO
+      KW_RANGE expression
+
+    | expression_list ASSIGN KW_RANGE expression
+
+    | identifier_list DECLARE_ASSIGN KW_RANGE expression
 ;
-*/
 
 
 /* ============================================================
