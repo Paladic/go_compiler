@@ -212,7 +212,7 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 {DECIMAL_FLOAT} { RETURN_FLOAT(FLOAT_LITERAL, Parser::Float(yytext), true); }
 
     /* ---------- Целочисленные литералы ---------- */
-    
+
 {BINARY_LITERAL} { RETURN_INTEGER(BINARY_LITERAL, Parser::Integer(yytext), true); }
 
 {OCTAL_LITERAL} {RETURN_INTEGER(OCTAL_LITERAL, Parser::Integer(yytext), true); }
@@ -634,36 +634,29 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 
 %%
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
 #ifdef _WIN32
     SetConsoleCP(CP_UTF8);
     SetConsoleOutputCP(CP_UTF8);
 #endif
 
     if (argc > 1) {
+        yyin = fopen(argv[1], "rb");
 
-        yyin = fopen(
-            argv[1],
-            "rb"
-        );
-
-        if (yyin == nullptr) {
-
-            std::cerr
-                << "Cannot open file: "
-                << argv[1]
-                << std::endl;
-
+        if (!yyin) {
+            Logger::Error("Cannot open file");
             return 1;
         }
     }
 
+    #ifdef PARSER_DEBUG
+        /* yydebug = 1; */
+    #endif
+
     int result = yyparse();
 
-    if (argc > 1) {
+    if (argc > 1)
         fclose(yyin);
-    }
 
     return result;
 }
