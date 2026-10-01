@@ -1,5 +1,9 @@
 %code requires {
     #include <string>
+    #include <vector>
+
+    // Временные объявление типов узлов дерева для компилятора
+    class ASTNode;
 }
 
 %define lr.type canonical-lr
@@ -7,6 +11,7 @@
 
 %{
 #include <string>
+#include <vector>
 
 #include "extension/logger/ParserLogger.h"
 
@@ -24,6 +29,10 @@ void yyerror(const char* message);
     long long integerValue;
     double floatValue;
     std::string* stringValue;
+
+    std::vector<std::string>* stringVector;
+    ASTNode* astNode;
+    std::vector<ASTNode*>* nodeVector;
 }
 
 
@@ -187,12 +196,52 @@ void yyerror(const char* message);
 %left MULTIPLY DIVIDE MODULO LEFT_SHIFT RIGHT_SHIFT BIT_AND BIT_CLEAR
 
 %precedence UNARY
+/* ---------- Привязка типов к нетерминалам ---------- */
+
+/* Для векторов строк */
+%type <stringVector> identifier_list
+
+/* Для векторов AST-узлов */
+%type <nodeVector> expression_list
+%type <nodeVector> statement_list
+%type <nodeVector> declarations
+%type <nodeVector> imports
+
+/* Для одиночных AST-узлов */
+%type <astNode> expression
+%type <astNode> statement
+%type <astNode> simple_statement
+%type <astNode> block
+%type <astNode> declaration
+%type <astNode> variable_declaration
+%type <astNode> constant_declaration
+%type <astNode> type_declaration
+%type <astNode> function_declaration
+%type <astNode> method_declaration
+
+%type <astNode> declaration_statement
+%type <astNode> expression_statement
+%type <astNode> increment_statement
+%type <astNode> decrement_statement
+%type <astNode> assignment
+%type <astNode> short_variable_declaration
+%type <astNode> return_statement
+%type <astNode> break_statement
+%type <astNode> continue_statement
+%type <astNode> goto_statement
+%type <astNode> fallthrough_statement
+%type <astNode> labeled_statement
+%type <astNode> defer_statement
+%type <astNode> go_statement
 
 /* очищаем строковые значения, если они удаляются */
 %destructor {
     delete $$;
 } <stringValue>
 
+%destructor {
+    delete $$;
+} <stringVector>
 
 /* корневой элемент дерева */
 %start program
@@ -201,7 +250,7 @@ void yyerror(const char* message);
 /* ---------- Корень программы ---------- */
 
 program:
-    package_clause SEMICOLON declarations
+    package_clause SEMICOLON imports declarations
     {
         ParserLogger::Message(
             "program parsed successfully"
@@ -690,29 +739,56 @@ receive_expression:
    IMPORTS
    ============================================================ */
 
-/*
+
 imports:
-    TODO
+    /* empty */
+    {
+        $$ = new std::vector<ASTNode*>();
+    }
+  | imports import_declaration SEMICOLON
+    {
+        $$ = $1;
+    }
 ;
-*/
+
 
 
 /* ---------- Import declaration ---------- */
 
-/*
 import_declaration:
-    TODO
+    KW_IMPORT import_spec
+  | KW_IMPORT LEFT_PAREN import_spec_list RIGHT_PAREN
 ;
-*/
 
 
 /* ---------- Один import ---------- */
 
-/*
-import_spec:
-    TODO
+import_spec_list:
+    /* empty */
+  | import_spec_list import_spec SEMICOLON
 ;
-*/
+
+import_spec:
+    STRING_LITERAL
+    {
+        ParserLogger::Value("import", *$1);
+        delete $1;
+    }
+  | RAW_STRING_LITERAL
+    {
+        ParserLogger::Value("import", *$1);
+        delete $1;
+    }
+  | DOT STRING_LITERAL
+    {
+        delete $2;
+    }
+  | IDENTIFIER STRING_LITERAL
+    {
+        delete $1;
+        delete $2;
+    }
+;
 
 
 /* ---------- Группа import ---------- */
@@ -728,40 +804,88 @@ import_group:
    DECLARATIONS
    ============================================================ */
 
-/*
+
 declarations:
-    TODO
+    /* empty */
+    {
+        $$ = new std::vector<ASTNode*>();
+    }
+  | declarations declaration SEMICOLON
+    {
+        if ($2) $1->push_back($2);
+        $$ = $1;
+    }
+  | declarations function_declaration SEMICOLON
+    {
+        if ($2) $1->push_back($2);
+        $$ = $1;
+    }
+  | declarations method_declaration SEMICOLON
+    {
+        if ($2) $1->push_back($2);
+        $$ = $1;
+    }
+  | declarations error SEMICOLON
+    {
+        yyerrok;
+        $$ = $1;
+    }
 ;
-*/
+
 
 
 /* ---------- Общее declaration ---------- */
 
-/*
+
 declaration:
-    TODO
+    variable_declaration
+  | constant_declaration
+  | type_declaration
 ;
-*/
+
 
 
 /* ============================================================
    VARIABLES
    ============================================================ */
 
-/*
+
 variable_declaration:
-    TODO
+    KW_VAR variable_spec
+    {
+        $$ = nullptr;
+    }
+  | KW_VAR LEFT_PAREN variable_spec_list RIGHT_PAREN
+    {
+        $$ = nullptr;
+    }
 ;
-*/
+
 
 
 /* ---------- Один var spec ---------- */
 
-/*
-variable_spec:
-    TODO
+variable_spec_list:
+    /* empty */
+  | variable_spec_list variable_spec SEMICOLON
 ;
-*/
+
+variable_spec:
+    identifier_list type
+    {
+        delete $1;
+    }
+  | identifier_list type ASSIGN expression_list
+    {
+        delete $1;
+        delete $4;
+    }
+  | identifier_list ASSIGN expression_list
+    {
+        delete $1;
+        delete $3;
+    }
+;
 
 
 /* ---------- Группа var ---------- */
@@ -777,20 +901,41 @@ variable_group:
    CONSTANTS
    ============================================================ */
 
-/*
 constant_declaration:
-    TODO
+    KW_CONST constant_spec
+    {
+        $$ = nullptr;
+    }
+  | KW_CONST LEFT_PAREN constant_spec_list RIGHT_PAREN
+    {
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ---------- Один const spec ---------- */
 
-/*
-constant_spec:
-    TODO
+constant_spec_list:
+    /* empty */
+  | constant_spec_list constant_spec SEMICOLON
 ;
-*/
+
+constant_spec:
+    identifier_list
+    {
+        delete $1;
+    }
+  | identifier_list type ASSIGN expression_list
+    {
+        delete $1;
+        delete $4;
+    }
+  | identifier_list ASSIGN expression_list
+    {
+        delete $1;
+        delete $3;
+    }
+;
 
 
 /* ---------- Группа const ---------- */
@@ -806,20 +951,35 @@ constant_group:
    TYPE DECLARATION
    ============================================================ */
 
-/*
 type_declaration:
-    TODO
+    KW_TYPE type_spec
+    {
+        $$ = nullptr;
+    }
+  | KW_TYPE LEFT_PAREN type_spec_list RIGHT_PAREN
+    {
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ---------- Один type spec ---------- */
 
-/*
-type_spec:
-    TODO
+type_spec_list:
+    /* empty */
+  | type_spec_list type_spec SEMICOLON
 ;
-*/
+
+type_spec:
+    IDENTIFIER type
+    {
+        delete $1;
+    }
+  | IDENTIFIER ASSIGN type
+    {
+        delete $1;
+    }
+;
 
 
 /* ============================================================
@@ -829,20 +989,27 @@ type_spec:
 
 /* ---------- Общий тип ---------- */
 
-/*
 type:
-    TODO
+    type_name
+  | pointer_type
+  | array_type
+  | slice_type
+  | map_type
+  | struct_type
+  | interface_type
+  | function_type
+  | channel_type
 ;
-*/
 
 
 /* ---------- Имя типа ---------- */
 
-/*
 type_name:
-    TODO
+    IDENTIFIER
+    {
+        delete $1;
+    }
 ;
-*/
 
 
 /* ============================================================
@@ -851,11 +1018,9 @@ type_name:
    [10]int
    ============================================================ */
 
-/*
 array_type:
-    TODO
+    LEFT_BRACKET expression RIGHT_BRACKET type
 ;
-*/
 
 
 /* ============================================================
@@ -864,11 +1029,9 @@ array_type:
    []int
    ============================================================ */
 
-/*
 slice_type:
-    TODO
+    LEFT_BRACKET RIGHT_BRACKET type
 ;
-*/
 
 
 /* ============================================================
@@ -877,11 +1040,9 @@ slice_type:
    *int
    ============================================================ */
 
-/*
 pointer_type:
-    TODO
+    MULTIPLY type
 ;
-*/
 
 
 /* ============================================================
@@ -890,80 +1051,74 @@ pointer_type:
    map[string]int
    ============================================================ */
 
-/*
 map_type:
-    TODO
+    KW_MAP LEFT_BRACKET type RIGHT_BRACKET type
 ;
-*/
 
 
 /* ============================================================
    STRUCT TYPE
    ============================================================ */
 
-/*
 struct_type:
-    TODO
+    KW_STRUCT LEFT_BRACE field_declarations RIGHT_BRACE
 ;
-*/
 
 
 /* ---------- Поля struct ---------- */
 
-/*
 field_declarations:
-    TODO
+    /* empty */
+  | field_declarations field_declaration SEMICOLON
 ;
-*/
 
 
 /* ---------- Одно поле ---------- */
 
-/*
 field_declaration:
-    TODO
+    identifier_list type
+    {
+        delete $1;
+    }
+  | type
 ;
-*/
 
 
 /* ============================================================
    INTERFACE TYPE
    ============================================================ */
 
-/*
 interface_type:
-    TODO
+    KW_INTERFACE LEFT_BRACE interface_elements RIGHT_BRACE
 ;
-*/
 
 
 /* ---------- Список элементов interface ---------- */
 
-/*
 interface_elements:
-    TODO
+    /* empty */
+  | interface_elements interface_element SEMICOLON
 ;
-*/
 
 
 /* ---------- Один элемент interface ---------- */
 
-/*
 interface_element:
-    TODO
+    IDENTIFIER function_signature
+    {
+        delete $1;
+    }
+  | type_name
 ;
-*/
 
 
 /* ============================================================
    FUNCTION TYPE
    ============================================================ */
 
-/*
 function_type:
-    TODO
+    KW_FUNC function_signature
 ;
-*/
 
 
 /* ============================================================
@@ -974,11 +1129,11 @@ function_type:
    chan<- int
    ============================================================ */
 
-/*
 channel_type:
-    TODO
+    KW_CHAN type
+  | CHANNEL_ARROW KW_CHAN type
+  | KW_CHAN CHANNEL_ARROW type
 ;
-*/
 
 
 /* ============================================================
@@ -988,11 +1143,20 @@ channel_type:
 
 /* ---------- Function declaration ---------- */
 
-/*
 function_declaration:
-    TODO
+    KW_FUNC IDENTIFIER function_signature function_body
+    {
+        ParserLogger::Value("func", *$2);
+        delete $2;
+        $$ = nullptr;
+    }
+  | KW_FUNC IDENTIFIER function_signature
+    {
+        ParserLogger::Value("func signature", *$2);
+        delete $2;
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ---------- Имя функции ---------- */
@@ -1006,76 +1170,84 @@ function_name:
 
 /* ---------- Сигнатура ---------- */
 
-/*
 function_signature:
-    TODO
+    parameters
+  | parameters result
 ;
-*/
 
 
 /* ---------- Параметры ---------- */
 
-/*
 parameters:
-    TODO
+    LEFT_PAREN RIGHT_PAREN
+  | LEFT_PAREN parameter_list RIGHT_PAREN
+  | LEFT_PAREN parameter_list COMMA RIGHT_PAREN
 ;
-*/
 
 
 /* ---------- Список параметров ---------- */
 
-/*
 parameter_list:
-    TODO
+    parameter
+  | parameter_list COMMA parameter
 ;
-*/
 
 
 /* ---------- Один параметр ---------- */
 
-/*
 parameter:
-    TODO
+    identifier_list type
+    {
+        delete $1;
+    }
+  | identifier_list ELLIPSIS type
+    {
+        delete $1;
+    }
+  | type
 ;
-*/
 
 
 /* ---------- Возвращаемое значение ---------- */
 
-/*
 result:
-    TODO
+    type
+  | parameters
 ;
-*/
 
 
 /* ---------- Тело функции ---------- */
 
-/*
 function_body:
-    TODO
+    block
 ;
-*/
 
 
 /* ============================================================
    METHODS
    ============================================================ */
 
-/*
 method_declaration:
-    TODO
+    KW_FUNC receiver IDENTIFIER function_signature function_body
+    {
+        ParserLogger::Value("method", *$3);
+        delete $3;
+        $$ = nullptr;
+    }
+  | KW_FUNC receiver IDENTIFIER function_signature
+    {
+        ParserLogger::Value("method signature", *$3);
+        delete $3;
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ---------- Receiver ---------- */
 
-/*
 receiver:
-    TODO
+    parameters
 ;
-*/
 
 
 /* ============================================================
@@ -1086,11 +1258,13 @@ receiver:
    }
    ============================================================ */
 
-/*
 block:
-    TODO
+    LEFT_BRACE statement_list RIGHT_BRACE
+    {
+        delete $2;
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ============================================================
@@ -1099,12 +1273,22 @@ block:
    Набор инструкций внутри block.
    ============================================================ */
 
-/*
 statement_list:
-    TODO
+    /* empty */
+    {
+        $$ = new std::vector<ASTNode*>();
+    }
+  | statement_list statement SEMICOLON
+    {
+        if ($2) $1->push_back($2);
+        $$ = $1;
+    }
+  | statement_list error SEMICOLON
+    {
+        yyerrok;
+        $$ = $1;
+    }
 ;
-*/
-
 
 /* ============================================================
    ОБЩИЙ STATEMENT
@@ -1112,11 +1296,20 @@ statement_list:
    Главная точка входа для любой инструкции.
    ============================================================ */
 
-/*
 statement:
-    TODO
+    declaration_statement
+  | simple_statement
+  | return_statement
+  | break_statement
+  | continue_statement
+  | goto_statement
+  | fallthrough_statement
+  | labeled_statement
+  | defer_statement
+  | go_statement
+  | block
+  | empty_statement
 ;
-*/
 
 
 /* ============================================================
@@ -1125,11 +1318,9 @@ statement:
    var / const / type внутри блока
    ============================================================ */
 
-/*
 declaration_statement:
-    TODO
+    declaration
 ;
-*/
 
 
 /* ============================================================
@@ -1143,22 +1334,22 @@ declaration_statement:
    send
    ============================================================ */
 
-/*
 simple_statement:
-    TODO
+    expression_statement
+  | increment_statement
+  | decrement_statement
+  | assignment
+  | short_variable_declaration
 ;
-*/
 
 
 /* ============================================================
    EXPRESSION STATEMENT
    ============================================================ */
 
-/*
 expression_statement:
-    TODO
+    expression
 ;
-*/
 
 
 /* ============================================================
@@ -1169,20 +1360,31 @@ expression_statement:
    x <<= y
    ============================================================ */
 
-/*
 assignment:
-    TODO
+    expression_list assignment_operator expression_list
+    {
+        delete $1;
+        delete $3;
+        $$ = nullptr;
+    }
 ;
-*/
-
 
 /* ---------- Оператор присваивания ---------- */
 
-/*
 assignment_operator:
-    TODO
+    ASSIGN
+  | PLUS_ASSIGN
+  | MINUS_ASSIGN
+  | MULTIPLY_ASSIGN
+  | DIVIDE_ASSIGN
+  | MODULO_ASSIGN
+  | BIT_AND_ASSIGN
+  | BIT_OR_ASSIGN
+  | BIT_XOR_ASSIGN
+  | LEFT_SHIFT_ASSIGN
+  | RIGHT_SHIFT_ASSIGN
+  | BIT_CLEAR_ASSIGN
 ;
-*/
 
 
 /* ============================================================
@@ -1192,11 +1394,14 @@ assignment_operator:
    x, y := 10, 20
    ============================================================ */
 
-/*
 short_variable_declaration:
-    TODO
+    identifier_list DECLARE_ASSIGN expression_list
+    {
+        delete $1;
+        delete $3;
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ============================================================
@@ -1205,11 +1410,12 @@ short_variable_declaration:
    x++
    ============================================================ */
 
-/*
 increment_statement:
-    TODO
+    expression INCREMENT
+    {
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ============================================================
@@ -1218,66 +1424,88 @@ increment_statement:
    x--
    ============================================================ */
 
-/*
 decrement_statement:
-    TODO
+    expression DECREMENT
+    {
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ============================================================
    RETURN
    ============================================================ */
 
-/*
 return_statement:
-    TODO
+    KW_RETURN
+    {
+        $$ = nullptr;
+    }
+  | KW_RETURN expression_list
+    {
+        delete $2;
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ============================================================
    BREAK
    ============================================================ */
 
-/*
 break_statement:
-    TODO
+    KW_BREAK
+    {
+        $$ = nullptr;
+    }
+  | KW_BREAK IDENTIFIER
+    {
+        delete $2;
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ============================================================
    CONTINUE
    ============================================================ */
 
-/*
 continue_statement:
-    TODO
+    KW_CONTINUE
+    {
+        $$ = nullptr;
+    }
+  | KW_CONTINUE IDENTIFIER
+    {
+        delete $2;
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ============================================================
    GOTO
    ============================================================ */
 
-/*
 goto_statement:
-    TODO
+    KW_GOTO IDENTIFIER
+    {
+        delete $2;
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ============================================================
    FALLTHROUGH
    ============================================================ */
 
-/*
 fallthrough_statement:
-    TODO
+    KW_FALLTHROUGH
+    {
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ============================================================
@@ -1286,11 +1514,13 @@ fallthrough_statement:
    start:
    ============================================================ */
 
-/*
 labeled_statement:
-    TODO
+    IDENTIFIER COLON statement
+    {
+        delete $1;
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ============================================================
@@ -1299,12 +1529,12 @@ labeled_statement:
    defer foo()
    ============================================================ */
 
-/*
 defer_statement:
-    TODO
+    KW_DEFER expression
+    {
+        $$ = nullptr;
+    }
 ;
-*/
-
 
 /* ============================================================
    GO
@@ -1312,11 +1542,12 @@ defer_statement:
    go foo()
    ============================================================ */
 
-/*
 go_statement:
-    TODO
+    KW_GO expression
+    {
+        $$ = nullptr;
+    }
 ;
-*/
 
 
 /* ============================================================
@@ -1327,11 +1558,20 @@ go_statement:
    x, y, z
    ============================================================ */
 
-/*
 identifier_list:
-    TODO
+    IDENTIFIER
+    {
+        $$ = new std::vector<std::string>();
+        $$->push_back(*$1);
+        delete $1;
+    }
+  | identifier_list COMMA IDENTIFIER
+    {
+        $1->push_back(*$3);
+        delete $3;
+        $$ = $1;
+    }
 ;
-*/
 
 
 /* ============================================================
@@ -1342,22 +1582,27 @@ identifier_list:
    x + 10, foo()
    ============================================================ */
 
-/*
 expression_list:
-    TODO
+    expression
+    {
+        $$ = new std::vector<ASTNode*>();
+        if ($1) $$->push_back($1);
+    }
+  | expression_list COMMA expression
+    {
+        if ($3) $1->push_back($3);
+        $$ = $1;
+    }
 ;
-*/
 
 
 /* ============================================================
    EMPTY STATEMENT
    ============================================================ */
 
-/*
 empty_statement:
-    TODO
+    /* empty */
 ;
-*/
 
 
 /* ============================================================
