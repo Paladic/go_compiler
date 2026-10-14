@@ -1267,7 +1267,7 @@ assignment_operator:
    ============================================================ */
 
 short_variable_declaration:
-    identifier_list DECLARE_ASSIGN expression_list
+    expression_list DECLARE_ASSIGN expression_list
 ;
 
 
