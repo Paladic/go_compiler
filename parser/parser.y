@@ -1,9 +1,6 @@
 %code requires {
     #include <string>
-    #include <vector>
 
-    // Временные объявление типов узлов дерева для компилятора
-    class ASTNode;
 }
 
 %define lr.type canonical-lr
@@ -11,7 +8,6 @@
 
 %{
 #include <string>
-#include <vector>
 
 #include "extension/logger/ParserLogger.h"
 
@@ -29,10 +25,6 @@ void yyerror(const char* message);
     long long integerValue;
     double floatValue;
     std::string* stringValue;
-
-    std::vector<std::string>* stringVector;
-    ASTNode* astNode;
-    std::vector<ASTNode*>* nodeVector;
 }
 
 
@@ -196,52 +188,13 @@ void yyerror(const char* message);
 %left MULTIPLY DIVIDE MODULO LEFT_SHIFT RIGHT_SHIFT BIT_AND BIT_CLEAR
 
 %precedence UNARY
-/* ---------- Привязка типов к нетерминалам ---------- */
-
-/* Для векторов строк */
-%type <stringVector> identifier_list
-
-/* Для векторов AST-узлов */
-%type <nodeVector> expression_list
-%type <nodeVector> statement_list
-%type <nodeVector> declarations
-%type <nodeVector> imports
-
-/* Для одиночных AST-узлов */
-%type <astNode> expression
-%type <astNode> statement
-%type <astNode> simple_statement
-%type <astNode> block
-%type <astNode> declaration
-%type <astNode> variable_declaration
-%type <astNode> constant_declaration
-%type <astNode> type_declaration
-%type <astNode> function_declaration
-%type <astNode> method_declaration
-
-%type <astNode> declaration_statement
-%type <astNode> expression_statement
-%type <astNode> increment_statement
-%type <astNode> decrement_statement
-%type <astNode> assignment
-%type <astNode> short_variable_declaration
-%type <astNode> return_statement
-%type <astNode> break_statement
-%type <astNode> continue_statement
-%type <astNode> goto_statement
-%type <astNode> fallthrough_statement
-%type <astNode> labeled_statement
-%type <astNode> defer_statement
-%type <astNode> go_statement
+%precedence CHAN_BARE
+%precedence CHANNEL_ARROW
 
 /* очищаем строковые значения, если они удаляются */
 %destructor {
     delete $$;
 } <stringValue>
-
-%destructor {
-    delete $$;
-} <stringVector>
 
 /* корневой элемент дерева */
 %start program
@@ -741,14 +694,8 @@ receive_expression:
 
 
 imports:
-    /* empty */
-    {
-        $$ = new std::vector<ASTNode*>();
-    }
+    %empty
   | imports import_declaration SEMICOLON
-    {
-        $$ = $1;
-    }
 ;
 
 
@@ -764,7 +711,7 @@ import_declaration:
 /* ---------- Один import ---------- */
 
 import_spec_list:
-    /* empty */
+    %empty
   | import_spec_list import_spec SEMICOLON
 ;
 
@@ -806,29 +753,13 @@ import_group:
 
 
 declarations:
-    /* empty */
-    {
-        $$ = new std::vector<ASTNode*>();
-    }
+    %empty
   | declarations declaration SEMICOLON
-    {
-        if ($2) $1->push_back($2);
-        $$ = $1;
-    }
   | declarations function_declaration SEMICOLON
-    {
-        if ($2) $1->push_back($2);
-        $$ = $1;
-    }
   | declarations method_declaration SEMICOLON
-    {
-        if ($2) $1->push_back($2);
-        $$ = $1;
-    }
   | declarations error SEMICOLON
     {
         yyerrok;
-        $$ = $1;
     }
 ;
 
@@ -852,13 +783,7 @@ declaration:
 
 variable_declaration:
     KW_VAR variable_spec
-    {
-        $$ = nullptr;
-    }
   | KW_VAR LEFT_PAREN variable_spec_list RIGHT_PAREN
-    {
-        $$ = nullptr;
-    }
 ;
 
 
@@ -866,25 +791,14 @@ variable_declaration:
 /* ---------- Один var spec ---------- */
 
 variable_spec_list:
-    /* empty */
+    %empty
   | variable_spec_list variable_spec SEMICOLON
 ;
 
 variable_spec:
     identifier_list type
-    {
-        delete $1;
-    }
   | identifier_list type ASSIGN expression_list
-    {
-        delete $1;
-        delete $4;
-    }
   | identifier_list ASSIGN expression_list
-    {
-        delete $1;
-        delete $3;
-    }
 ;
 
 
@@ -903,38 +817,21 @@ variable_group:
 
 constant_declaration:
     KW_CONST constant_spec
-    {
-        $$ = nullptr;
-    }
   | KW_CONST LEFT_PAREN constant_spec_list RIGHT_PAREN
-    {
-        $$ = nullptr;
-    }
 ;
 
 
 /* ---------- Один const spec ---------- */
 
 constant_spec_list:
-    /* empty */
+    %empty
   | constant_spec_list constant_spec SEMICOLON
 ;
 
 constant_spec:
     identifier_list
-    {
-        delete $1;
-    }
   | identifier_list type ASSIGN expression_list
-    {
-        delete $1;
-        delete $4;
-    }
   | identifier_list ASSIGN expression_list
-    {
-        delete $1;
-        delete $3;
-    }
 ;
 
 
@@ -953,20 +850,14 @@ constant_group:
 
 type_declaration:
     KW_TYPE type_spec
-    {
-        $$ = nullptr;
-    }
   | KW_TYPE LEFT_PAREN type_spec_list RIGHT_PAREN
-    {
-        $$ = nullptr;
-    }
 ;
 
 
 /* ---------- Один type spec ---------- */
 
 type_spec_list:
-    /* empty */
+    %empty
   | type_spec_list type_spec SEMICOLON
 ;
 
@@ -1068,7 +959,7 @@ struct_type:
 /* ---------- Поля struct ---------- */
 
 field_declarations:
-    /* empty */
+    %empty
   | field_declarations field_declaration SEMICOLON
 ;
 
@@ -1077,9 +968,6 @@ field_declarations:
 
 field_declaration:
     identifier_list type
-    {
-        delete $1;
-    }
   | type
 ;
 
@@ -1096,7 +984,7 @@ interface_type:
 /* ---------- Список элементов interface ---------- */
 
 interface_elements:
-    /* empty */
+    %empty
   | interface_elements interface_element SEMICOLON
 ;
 
@@ -1130,9 +1018,13 @@ function_type:
    ============================================================ */
 
 channel_type:
-    KW_CHAN type
+    chan_prefix type
   | CHANNEL_ARROW KW_CHAN type
-  | KW_CHAN CHANNEL_ARROW type
+;
+
+chan_prefix:
+    KW_CHAN %prec CHAN_BARE
+  | KW_CHAN CHANNEL_ARROW
 ;
 
 
@@ -1148,13 +1040,11 @@ function_declaration:
     {
         ParserLogger::Value("func", *$2);
         delete $2;
-        $$ = nullptr;
     }
   | KW_FUNC IDENTIFIER function_signature
     {
         ParserLogger::Value("func signature", *$2);
         delete $2;
-        $$ = nullptr;
     }
 ;
 
@@ -1196,15 +1086,16 @@ parameter_list:
 /* ---------- Один параметр ---------- */
 
 parameter:
-    identifier_list type
+    type
+  | IDENTIFIER type
     {
         delete $1;
     }
-  | identifier_list ELLIPSIS type
+  | IDENTIFIER ELLIPSIS type
     {
         delete $1;
     }
-  | type
+  | ELLIPSIS type
 ;
 
 
@@ -1232,13 +1123,11 @@ method_declaration:
     {
         ParserLogger::Value("method", *$3);
         delete $3;
-        $$ = nullptr;
     }
   | KW_FUNC receiver IDENTIFIER function_signature
     {
         ParserLogger::Value("method signature", *$3);
         delete $3;
-        $$ = nullptr;
     }
 ;
 
@@ -1260,10 +1149,6 @@ receiver:
 
 block:
     LEFT_BRACE statement_list RIGHT_BRACE
-    {
-        delete $2;
-        $$ = nullptr;
-    }
 ;
 
 
@@ -1274,19 +1159,11 @@ block:
    ============================================================ */
 
 statement_list:
-    /* empty */
-    {
-        $$ = new std::vector<ASTNode*>();
-    }
+    %empty
   | statement_list statement SEMICOLON
-    {
-        if ($2) $1->push_back($2);
-        $$ = $1;
-    }
   | statement_list error SEMICOLON
     {
         yyerrok;
-        $$ = $1;
     }
 ;
 
@@ -1362,11 +1239,6 @@ expression_statement:
 
 assignment:
     expression_list assignment_operator expression_list
-    {
-        delete $1;
-        delete $3;
-        $$ = nullptr;
-    }
 ;
 
 /* ---------- Оператор присваивания ---------- */
@@ -1396,11 +1268,6 @@ assignment_operator:
 
 short_variable_declaration:
     identifier_list DECLARE_ASSIGN expression_list
-    {
-        delete $1;
-        delete $3;
-        $$ = nullptr;
-    }
 ;
 
 
@@ -1412,9 +1279,6 @@ short_variable_declaration:
 
 increment_statement:
     expression INCREMENT
-    {
-        $$ = nullptr;
-    }
 ;
 
 
@@ -1426,9 +1290,6 @@ increment_statement:
 
 decrement_statement:
     expression DECREMENT
-    {
-        $$ = nullptr;
-    }
 ;
 
 
@@ -1438,14 +1299,7 @@ decrement_statement:
 
 return_statement:
     KW_RETURN
-    {
-        $$ = nullptr;
-    }
   | KW_RETURN expression_list
-    {
-        delete $2;
-        $$ = nullptr;
-    }
 ;
 
 
@@ -1455,13 +1309,9 @@ return_statement:
 
 break_statement:
     KW_BREAK
-    {
-        $$ = nullptr;
-    }
   | KW_BREAK IDENTIFIER
     {
         delete $2;
-        $$ = nullptr;
     }
 ;
 
@@ -1472,13 +1322,9 @@ break_statement:
 
 continue_statement:
     KW_CONTINUE
-    {
-        $$ = nullptr;
-    }
   | KW_CONTINUE IDENTIFIER
     {
         delete $2;
-        $$ = nullptr;
     }
 ;
 
@@ -1491,7 +1337,6 @@ goto_statement:
     KW_GOTO IDENTIFIER
     {
         delete $2;
-        $$ = nullptr;
     }
 ;
 
@@ -1502,9 +1347,6 @@ goto_statement:
 
 fallthrough_statement:
     KW_FALLTHROUGH
-    {
-        $$ = nullptr;
-    }
 ;
 
 
@@ -1518,7 +1360,6 @@ labeled_statement:
     IDENTIFIER COLON statement
     {
         delete $1;
-        $$ = nullptr;
     }
 ;
 
@@ -1531,9 +1372,6 @@ labeled_statement:
 
 defer_statement:
     KW_DEFER expression
-    {
-        $$ = nullptr;
-    }
 ;
 
 /* ============================================================
@@ -1544,9 +1382,6 @@ defer_statement:
 
 go_statement:
     KW_GO expression
-    {
-        $$ = nullptr;
-    }
 ;
 
 
@@ -1561,15 +1396,11 @@ go_statement:
 identifier_list:
     IDENTIFIER
     {
-        $$ = new std::vector<std::string>();
-        $$->push_back(*$1);
         delete $1;
     }
   | identifier_list COMMA IDENTIFIER
     {
-        $1->push_back(*$3);
         delete $3;
-        $$ = $1;
     }
 ;
 
@@ -1584,15 +1415,7 @@ identifier_list:
 
 expression_list:
     expression
-    {
-        $$ = new std::vector<ASTNode*>();
-        if ($1) $$->push_back($1);
-    }
   | expression_list COMMA expression
-    {
-        if ($3) $1->push_back($3);
-        $$ = $1;
-    }
 ;
 
 
@@ -1601,7 +1424,7 @@ expression_list:
    ============================================================ */
 
 empty_statement:
-    /* empty */
+    %empty
 ;
 
 
