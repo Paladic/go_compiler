@@ -1,44 +1,57 @@
+/* ---------- Общие объявления C++ ---------- */
+
 %code requires {
+    #include "SourceRange.h"
     #include <string>
 
+    // Координаты допускают перемещение вместе со стеком LR.
+    #define YYLTYPE_IS_TRIVIAL 1
+    #define YYLLOC_DEFAULT(Current, Rhs, N) \
+        MergeSourceRange(Current, YYRHSLOC(Rhs, (N) ? 1 : 0), \
+                         YYRHSLOC(Rhs, N), YYRHSLOC(Rhs, 0), N)
 }
 
-%define lr.type canonical-lr
+
+/* ---------- Настройки парсера ---------- */
+
+%define lr.type lalr
+%expect 0
+%locations
 %define parse.trace
+%define parse.error detailed
+%define api.location.type {SourceRange}
 
-%{
-#include <string>
+%code top {
+    #define YYMAXDEPTH 1000000
+}
 
-#include "extension/logger/ParserLogger.h"
+%code {
+    #include "LexerSupport.h"
 
-extern int yylex();
-extern int yylineno;
-extern int yydebug;
-
-void yyerror(const char* message);
-%}
+    int yylex();
+    void yyerror(const char* message);
+}
 
 
-/* ---------- Семантические значения ---------- */
+/* ---------- Семантические значения токенов ---------- */
 
 %union {
     long long integerValue;
-    double floatValue;
-    std::string* stringValue;
+    const std::string* stringValue;
 }
 
 
-/* ---------- литералы ---------- */
+/* ---------- Литералы ---------- */
 
-%token <integerValue> DECIMAL_LITERAL
-%token <integerValue> BINARY_LITERAL
-%token <integerValue> OCTAL_LITERAL
-%token <integerValue> HEX_LITERAL
+%token <stringValue> DECIMAL_LITERAL
+%token <stringValue> BINARY_LITERAL
+%token <stringValue> OCTAL_LITERAL
+%token <stringValue> HEX_LITERAL
 %token <integerValue> RUNE_LITERAL
 
-%token <floatValue> FLOAT_LITERAL
-%token <floatValue> HEX_FLOAT_LITERAL
-%token <floatValue> IMAGINARY_LITERAL
+%token <stringValue> FLOAT_LITERAL
+%token <stringValue> HEX_FLOAT_LITERAL
+%token <stringValue> IMAGINARY_LITERAL
 
 %token <stringValue> IDENTIFIER
 %token <stringValue> STRING_LITERAL
@@ -80,104 +93,118 @@ void yyerror(const char* message);
 
 /* ---------- Арифметические операторы ---------- */
 
-%token PLUS
-%token MINUS
-%token MULTIPLY
-%token DIVIDE
-%token MODULO
+%token PLUS "+"
+%token MINUS "-"
+%token MULTIPLY "*"
+%token DIVIDE "/"
+%token MODULO "%"
 
 
 /* ---------- Побитовые операторы ---------- */
 
-%token BIT_AND
-%token BIT_OR
-%token BIT_XOR
-%token BIT_CLEAR
+%token BIT_AND "&"
+%token BIT_OR "|"
+%token BIT_XOR "^"
+%token BIT_CLEAR "&^"
 
 
 /* ---------- Операторы сдвига ---------- */
 
-%token LEFT_SHIFT
-%token RIGHT_SHIFT
+%token LEFT_SHIFT "<<"
+%token RIGHT_SHIFT ">>"
 
 
 /* ---------- Логические операторы ---------- */
 
-%token LOGICAL_AND
-%token LOGICAL_OR
-%token LOGICAL_NOT
+%token LOGICAL_AND "&&"
+%token LOGICAL_OR "||"
+%token LOGICAL_NOT "!"
 
 
 /* ---------- Операторы сравнения ---------- */
 
-%token EQUAL
-%token NOT_EQUAL
+%token EQUAL "=="
+%token NOT_EQUAL "!="
 
-%token LESS
-%token LESS_EQUAL
+%token LESS "<"
+%token LESS_EQUAL "<="
 
-%token GREATER
-%token GREATER_EQUAL
+%token GREATER ">"
+%token GREATER_EQUAL ">="
 
 
 /* ---------- Операторы присваивания ---------- */
 
-%token ASSIGN
+%token ASSIGN "="
 
-%token PLUS_ASSIGN
-%token MINUS_ASSIGN
-%token MULTIPLY_ASSIGN
-%token DIVIDE_ASSIGN
-%token MODULO_ASSIGN
+%token PLUS_ASSIGN "+="
+%token MINUS_ASSIGN "-="
+%token MULTIPLY_ASSIGN "*="
+%token DIVIDE_ASSIGN "/="
+%token MODULO_ASSIGN "%="
 
-%token BIT_AND_ASSIGN
-%token BIT_OR_ASSIGN
-%token BIT_XOR_ASSIGN
+%token BIT_AND_ASSIGN "&="
+%token BIT_OR_ASSIGN "|="
+%token BIT_XOR_ASSIGN "^="
+%token BIT_CLEAR_ASSIGN "&^="
 
-%token LEFT_SHIFT_ASSIGN
-%token RIGHT_SHIFT_ASSIGN
+%token LEFT_SHIFT_ASSIGN "<<="
+%token RIGHT_SHIFT_ASSIGN ">>="
 
-%token BIT_CLEAR_ASSIGN
-
-%token DECLARE_ASSIGN
+%token DECLARE_ASSIGN ":="
 
 
 /* ---------- Прочие операторы ---------- */
 
-%token INCREMENT
-%token DECREMENT
+%token INCREMENT "++"
+%token DECREMENT "--"
 
-%token CHANNEL_ARROW
+%token CHANNEL_ARROW "<-"
 
-%token TILDE
+%token TILDE "~"
 
 
 /* ---------- Скобки ---------- */
 
-%token LEFT_PAREN
-%token RIGHT_PAREN
+%token LEFT_PAREN "("
+%token RIGHT_PAREN ")"
 
-%token LEFT_BRACKET
-%token RIGHT_BRACKET
+%token LEFT_BRACKET "["
+%token RIGHT_BRACKET "]"
 
-%token LEFT_BRACE
-%token RIGHT_BRACE
+%token LEFT_BRACE "{"
+%token RIGHT_BRACE "}"
 
 
-/* ---------- Пунктуация---------- */
+/* ---------- Пунктуация ---------- */
 
-%token COMMA
-%token COLON
-%token DOT
-%token ELLIPSIS
-%token SEMICOLON
+%token COMMA ","
+%token COLON ":"
+%token DOT "."
+%token ELLIPSIS "..."
+%token SEMICOLON ";"
+
+
+/* ---------- Служебный контекст лексера ---------- */
+
+%token BODY_BRACE "body {"
+
 
 /* ---------- Ошибки лексера ---------- */
 
 %token LEXICAL_ERROR
 
+
 /* ---------- Приоритеты операторов ---------- */
 
+// Порядок всех объявлений приоритета сохраняется: он влияет на таблицу LR.
+
+/* Границы имени типа, сигнатуры и направления канала. */
+%precedence NAME_END EMPTY_SIGNATURE CHAN_BARE
+%precedence LEFT_PAREN
+%precedence ARRAY_CALL
+
+/* Бинарные операторы: от меньшего приоритета к большему. */
 %left LOGICAL_OR
 %left LOGICAL_AND
 
@@ -187,179 +214,686 @@ void yyerror(const char* message);
 
 %left MULTIPLY DIVIDE MODULO LEFT_SHIFT RIGHT_SHIFT BIT_AND BIT_CLEAR
 
-%precedence UNARY
-%precedence CHAN_BARE
+/* Продолжение типа или выражения. */
+%precedence IDENTIFIER KW_FUNC KW_INTERFACE KW_MAP KW_STRUCT KW_CHAN LEFT_BRACKET DOT COMMA
 %precedence CHANNEL_ARROW
 
-/* очищаем строковые значения, если они удаляются */
-%destructor {
-    delete $$;
-} <stringValue>
 
-/* корневой элемент дерева */
-%start program
+/* ---------- Начальное правило ---------- */
+
+%start start
+
 
 %%
+
+/* ============================================================
+   PROGRAM
+   ============================================================ */
+
+
+/* ---------- Начальное правило ---------- */
+
+start:
+      program
+;
+
+
 /* ---------- Корень программы ---------- */
 
 program:
-    package_clause SEMICOLON imports declarations
-    {
-        ParserLogger::Message(
-            "program parsed successfully"
-        );
-    }
+      package_clause ";" imports declarations
 ;
+
 
 /* ---------- Package ---------- */
 
 package_clause:
-    KW_PACKAGE IDENTIFIER
-    {
-        ParserLogger::Value(
-            "package",
-            *$2
-        );
-
-        delete $2;
-    }
+      KW_PACKAGE identifier
 ;
+
+
+/* ============================================================
+   IMPORTS
+   ============================================================ */
+
+
+/* ---------- Список импортов ---------- */
+
+imports:
+      %empty
+    | imports import_declaration ";"
+;
+
+
+/* ---------- Объявление import ---------- */
+
+import_declaration:
+      KW_IMPORT import_spec
+    | KW_IMPORT "(" import_spec_list ")"
+;
+
+
+/* ---------- Содержимое группы import ---------- */
+
+import_spec_list:
+      %empty
+    | import_spec ";" import_spec_list
+    | import_spec
+;
+
+
+/* ---------- Один импорт ---------- */
+
+import_spec:
+      import_path
+    | "." import_path
+    | identifier import_path
+;
+
+
+/* ---------- Путь импорта ---------- */
+
+import_path:
+      STRING_LITERAL {}
+    | RAW_STRING_LITERAL {}
+;
+
+
+/* ============================================================
+   DECLARATIONS
+   ============================================================ */
+
 
 /* ---------- Список объявлений ---------- */
 
 declarations:
       %empty
-    | declarations declaration SEMICOLON
+    | declarations top_level_declaration ";"
 ;
 
-/* ---------- Объявление ---------- */
+
+/* ---------- Объявление верхнего уровня ---------- */
+
+top_level_declaration:
+      declaration
+    | function_declaration
+    | method_declaration
+;
+
+
+/* ---------- Общее объявление ---------- */
 
 declaration:
-    variable_declaration
+      variable_declaration
+    | constant_declaration
+    | type_declaration
 ;
 
-/* ---------- Переменная ---------- */
+
+/* ============================================================
+   VARIABLES
+   ============================================================ */
+
+
+/* ---------- Объявление var ---------- */
 
 variable_declaration:
-    KW_VAR IDENTIFIER ASSIGN expression
-    {
-        ParserLogger::Value(
-            "variable declaration",
-            *$2
-        );
-
-        delete $2;
-    }
+      KW_VAR variable_spec
+    | KW_VAR "(" variable_spec_list ")"
 ;
+
+
+/* ---------- Содержимое группы var ---------- */
+
+variable_spec_list:
+      %empty
+    | variable_spec ";" variable_spec_list
+    | variable_spec
+;
+
+
+/* ---------- Одна спецификация var ---------- */
+
+variable_spec:
+      identifier_list type
+    | identifier_list type "=" expression_list
+    | identifier_list "=" expression_list
+;
+
+
+/* ============================================================
+   CONSTANTS
+   ============================================================ */
+
+
+/* ---------- Объявление const ---------- */
+
+constant_declaration:
+      KW_CONST initialized_constant_spec
+    | KW_CONST "(" constant_spec_list ")"
+;
+
+
+/* ---------- Содержимое группы const ---------- */
+
+constant_spec_list:
+      %empty
+    | initialized_constant_spec constant_spec_list_tail
+;
+
+
+/* ---------- Продолжение группы const ---------- */
+
+constant_spec_list_tail:
+      %empty
+    | ";"
+    | ";" constant_spec constant_spec_list_tail
+;
+
+
+/* ---------- Спецификация const ---------- */
+
+constant_spec:
+      initialized_constant_spec
+    | identifier_list
+;
+
+
+/* ---------- Спецификация const с инициализацией ---------- */
+
+initialized_constant_spec:
+      identifier_list type "=" expression_list
+    | identifier_list "=" expression_list
+;
+
+
+/* ============================================================
+   TYPE DECLARATION
+   ============================================================ */
+
+
+/* ---------- Объявление type ---------- */
+
+type_declaration:
+      KW_TYPE type_spec
+    | KW_TYPE "(" type_spec_list ")"
+;
+
+
+/* ---------- Содержимое группы type ---------- */
+
+type_spec_list:
+      %empty
+    | type_spec ";" type_spec_list
+    | type_spec
+;
+
+
+/* ---------- Определение типа или alias ---------- */
+
+type_spec:
+      identifier type
+    | identifier "=" type
+    | identifier type_parameters type
+    | identifier type_parameters "=" type
+    | identifier bracket_group "=" type
+;
+
+
+/* ============================================================
+   TYPES
+   ============================================================ */
+
+
+/* ---------- Общий тип ---------- */
+
+type:
+      type_name
+    | pointer_type
+    | array_type
+    | map_type
+    | struct_type
+    | interface_type
+    | function_type
+    | channel_type
+    | "(" type ")"
+;
+
+
+/* ---------- Имя типа ---------- */
+
+type_name:
+      identifier %prec NAME_END
+    | identifier "." identifier
+    | identifier type_arguments
+    | identifier "." identifier type_arguments
+;
+
+
+/* ---------- Тип без имени ---------- */
+
+non_name_type:
+      array_type
+    | map_type
+    | struct_type
+    | interface_type
+    | function_type
+    | channel_type
+;
+
+
+/* ---------- Форма типа, не являющаяся выражением ---------- */
+
+non_expression_type:
+      non_name_type
+    | "*" non_expression_type
+    | "(" non_expression_type ")"
+;
+
+
+/* ============================================================
+   TYPE PARAMETERS AND CONSTRAINTS
+   ============================================================ */
+
+
+/* ---------- Аргументы типа ---------- */
+
+type_arguments:
+      bracket_group
+;
+
+
+/* ---------- Параметры типа ---------- */
+
+type_parameters:
+      "[" type_parameter_list "]"
+;
+
+
+/* ---------- Список параметров типа ---------- */
+
+type_parameter_list:
+      identifier type_parameter_after_name
+;
+
+
+/* ---------- Продолжение после имени параметра типа ---------- */
+
+type_parameter_after_name:
+      type_constraint type_parameter_after_constraint
+    | "," type_parameter_list
+;
+
+
+/* ---------- Продолжение после ограничения ---------- */
+
+type_parameter_after_constraint:
+      %empty
+    | ","
+    | "," type_parameter_list
+;
+
+
+/* ---------- Ограничение типа ---------- */
+
+type_constraint:
+      type_terms
+;
+
+
+/* ---------- Объединение типов ---------- */
+
+type_terms:
+      type_term
+    | type_terms "|" type_term
+;
+
+
+/* ---------- Один тип в ограничении ---------- */
+
+type_term:
+      type
+    | "~" type
+;
+
+
+/* ============================================================
+   ARRAY TYPE
+   ============================================================ */
+
+
+/* ---------- Массив или срез ---------- */
+
+array_type:
+      bracket_group type
+;
+
+
+/* ============================================================
+   POINTER TYPE
+   ============================================================ */
+
+
+/* ---------- Указатель ---------- */
+
+pointer_type:
+      "*" type
+;
+
+
+/* ============================================================
+   MAP TYPE
+   ============================================================ */
+
+
+/* ---------- Отображение map ---------- */
+
+map_type:
+      KW_MAP "[" type "]" type
+;
+
+
+/* ============================================================
+   STRUCT TYPE
+   ============================================================ */
+
+
+/* ---------- Структура ---------- */
+
+struct_type:
+      KW_STRUCT block_open field_declarations "}"
+;
+
+
+/* ---------- Список полей ---------- */
+
+field_declarations:
+      %empty
+    | field_declaration ";" field_declarations
+    | field_declaration
+;
+
+
+/* ---------- Одно поле или группа полей ---------- */
+
+field_declaration:
+      identifier array_type optional_struct_tag
+    | identifier_list type optional_struct_tag
+    | embedded_field optional_struct_tag
+;
+
+
+/* ---------- Встроенное поле ---------- */
+
+embedded_field:
+      type_name
+    | "*" type_name
+;
+
+
+/* ---------- Необязательный тег поля ---------- */
+
+optional_struct_tag:
+      %empty
+    | STRING_LITERAL {}
+    | RAW_STRING_LITERAL {}
+;
+
+
+/* ============================================================
+   INTERFACE TYPE
+   ============================================================ */
+
+
+/* ---------- Интерфейс ---------- */
+
+interface_type:
+      KW_INTERFACE "{" interface_elements "}"
+;
+
+
+/* ---------- Список элементов интерфейса ---------- */
+
+interface_elements:
+      %empty
+    | interface_element ";" interface_elements
+    | interface_element
+;
+
+
+/* ---------- Метод или ограничение интерфейса ---------- */
+
+interface_element:
+      identifier function_signature
+    | type_terms
+;
+
+
+/* ============================================================
+   FUNCTION TYPE
+   ============================================================ */
+
+
+/* ---------- Тип функции ---------- */
+
+function_type:
+      KW_FUNC function_signature
+;
+
+
+/* ============================================================
+   CHANNEL TYPE
+   ============================================================ */
+
+
+/* ---------- Тип канала ---------- */
+
+channel_type:
+      chan_prefix type
+    | "<-" KW_CHAN type
+;
+
+
+/* ---------- Направление канала ---------- */
+
+chan_prefix:
+      KW_CHAN %prec CHAN_BARE
+    | KW_CHAN "<-"
+;
+
+
+/* ============================================================
+   FUNCTIONS
+   ============================================================ */
+
+
+/* ---------- Объявление функции ---------- */
+
+function_declaration:
+      KW_FUNC identifier function_signature function_body
+    | KW_FUNC identifier function_signature
+    | KW_FUNC identifier type_parameters function_signature function_body
+    | KW_FUNC identifier type_parameters function_signature
+;
+
+
+/* ---------- Сигнатура функции ---------- */
+
+function_signature:
+      parameters %prec EMPTY_SIGNATURE
+    | parameters result
+;
+
+
+/* ---------- Параметры функции ---------- */
+
+parameters:
+      "(" ")"
+    | "(" parameter_list ")"
+    | "(" parameter_list "," ")"
+;
+
+
+/* ---------- Список обычных параметров ---------- */
+
+parameter_list:
+      parameter_item
+    | parameter_list "," parameter_item
+;
+
+
+/* ---------- Обычный параметр ---------- */
+
+parameter_item:
+      type_name
+    | identifier type
+    | identifier "..." type
+    | "..." type
+    | non_name_type
+    | pointer_type
+    | "(" type ")"
+;
+
+
+/* ---------- Результат функции ---------- */
+
+result:
+      result_atomic_type
+    | parameters
+;
+
+
+/* ---------- Один тип результата ---------- */
+
+result_atomic_type:
+      type_name
+    | pointer_type
+    | array_type
+    | map_type
+    | struct_type
+    | interface_type
+    | function_type
+    | channel_type
+;
+
+
+/* ---------- Тело функции ---------- */
+
+function_body:
+      block
+;
+
+
+/* ============================================================
+   METHODS
+   ============================================================ */
+
+
+/* ---------- Объявление метода ---------- */
+
+method_declaration:
+      KW_FUNC receiver identifier function_signature function_body
+    | KW_FUNC receiver identifier function_signature
+    | KW_FUNC receiver identifier type_parameters function_signature function_body
+    | KW_FUNC receiver identifier type_parameters function_signature
+;
+
+
+/* ---------- Получатель метода ---------- */
+
+receiver:
+      "(" receiver_type optional_trailing_comma ")"
+    | "(" identifier receiver_type optional_trailing_comma ")"
+;
+
+
+/* ---------- Тип получателя ---------- */
+
+receiver_type:
+      type_name
+    | "*" receiver_type
+    | "(" receiver_type ")"
+;
+
 
 /* ============================================================
    EXPRESSIONS
    ============================================================ */
 
+
+/* ---------- Бинарные выражения ---------- */
+
 expression:
-      primary_expression
-
-    /* ---------- Бинарные логические ---------- */
-
-    | expression LOGICAL_OR expression
-    | expression LOGICAL_AND expression
-
-
-    /* ---------- Сравнение ---------- */
-
-    | expression EQUAL expression
-    | expression NOT_EQUAL expression
-
-    | expression LESS expression
-    | expression LESS_EQUAL expression
-    | expression GREATER expression
-    | expression GREATER_EQUAL expression
-
-
-    /* ---------- Арифметика / побитовые ---------- */
-
-    | expression PLUS expression
-    | expression MINUS expression
-
-    | expression BIT_OR expression
-    | expression BIT_XOR expression
-
-    | expression MULTIPLY expression
-    | expression DIVIDE expression
-    | expression MODULO expression
-
-    | expression LEFT_SHIFT expression
-    | expression RIGHT_SHIFT expression
-
-    | expression BIT_AND expression
-    | expression BIT_CLEAR expression
-
-
-    /* ---------- Унарные ---------- */
-
-    | PLUS expression %prec UNARY
-    | MINUS expression %prec UNARY
-
-    | LOGICAL_NOT expression %prec UNARY
-    | BIT_XOR expression %prec UNARY
-
-    | MULTIPLY expression %prec UNARY
-    | BIT_AND expression %prec UNARY
-
-    | CHANNEL_ARROW expression %prec UNARY
+      unary_expression
+    | expression "||" expression
+    | expression "&&" expression
+    | expression "==" expression
+    | expression "!=" expression
+    | expression "<" expression
+    | expression "<=" expression
+    | expression ">" expression
+    | expression ">=" expression
+    | expression "+" expression
+    | expression "-" expression
+    | expression "|" expression
+    | expression "^" expression
+    | expression "*" expression
+    | expression "/" expression
+    | expression "%" expression
+    | expression "<<" expression
+    | expression ">>" expression
+    | expression "&" expression
+    | expression "&^" expression
 ;
 
-/* ---------- Primary expression ---------- */
+
+/* ---------- Унарные выражения ---------- */
+
+unary_expression:
+      primary_expression
+    | "+" unary_expression
+    | "-" unary_expression
+    | "!" unary_expression
+    | "^" unary_expression
+    | "*" unary_expression
+    | "&" unary_expression
+    | "<-" unary_expression
+;
+
+
+/* ---------- Первичные выражения ---------- */
 
 primary_expression:
       operand
-
-    /* obj.field */
-    | primary_expression DOT IDENTIFIER
-    {
-        delete $3;
-    }
-
-    /* foo(...) / obj.method(...) */
+    | primary_expression "." identifier
     | primary_expression arguments
-
-    /* array[index] */
-    | primary_expression LEFT_BRACKET expression RIGHT_BRACKET
-
-    /* array[low:high] */
-    | primary_expression LEFT_BRACKET optional_expression
-      COLON optional_expression RIGHT_BRACKET
-
-    /* array[low:high:max] */
-    | primary_expression LEFT_BRACKET optional_expression
-      COLON expression
-      COLON expression RIGHT_BRACKET
-
-    /* x.(T) */
+    | primary_expression "[" optional_expression ":" optional_expression "]"
+    | primary_expression "[" optional_expression ":" expression ":" expression "]"
     | primary_expression type_assertion
+    | non_name_type "." identifier
+    | "(" non_expression_type ")" arguments
+    | "(" non_expression_type ")" "." identifier
+    | primary_expression bracket_group
+    | non_name_type "(" expression optional_trailing_comma ")"
+    | primary_expression literal_value
 ;
 
 
-/* ---------- Operand ---------- */
+/* ---------- Операнд ---------- */
 
 operand:
       literal
-
-    | IDENTIFIER
-    {
-        delete $1;
-    }
-
-    | LEFT_PAREN expression RIGHT_PAREN
+    | identifier %prec ARRAY_CALL
+    | "(" expression ")"
 ;
-
-/* ---------- Operand ---------- */
-
 
 
 /* ============================================================
    LITERALS
    ============================================================ */
+
+
+/* ---------- Виды литералов ---------- */
 
 literal:
       integer_literal
@@ -372,144 +906,175 @@ literal:
 ;
 
 
+/* ---------- Целочисленные литералы ---------- */
+
 integer_literal:
-      DECIMAL_LITERAL
-    | BINARY_LITERAL
-    | OCTAL_LITERAL
-    | HEX_LITERAL
+      DECIMAL_LITERAL {}
+    | BINARY_LITERAL {}
+    | OCTAL_LITERAL {}
+    | HEX_LITERAL {}
 ;
 
+
+/* ---------- Вещественные литералы ---------- */
 
 float_literal:
-      FLOAT_LITERAL
-    | HEX_FLOAT_LITERAL
+      FLOAT_LITERAL {}
+    | HEX_FLOAT_LITERAL {}
 ;
 
+
+/* ---------- Мнимый литерал ---------- */
 
 imaginary_literal:
-    IMAGINARY_LITERAL
+      IMAGINARY_LITERAL {}
 ;
 
+
+/* ---------- Rune-литерал ---------- */
 
 rune_literal:
-    RUNE_LITERAL
+      RUNE_LITERAL {}
 ;
 
+
+/* ---------- Строковые литералы ---------- */
 
 string_literal:
-      STRING_LITERAL
-    {
-        delete $1;
-    }
-
-    | RAW_STRING_LITERAL
-    {
-        delete $1;
-    }
+      STRING_LITERAL {}
+    | RAW_STRING_LITERAL {}
 ;
 
+
+/* ============================================================
+   CALL ARGUMENTS
+   ============================================================ */
 
 
 /* ---------- Аргументы вызова ---------- */
 
 arguments:
-      LEFT_PAREN RIGHT_PAREN
-
-    | LEFT_PAREN argument_list RIGHT_PAREN
-
-    | LEFT_PAREN argument_list COMMA RIGHT_PAREN
-
-    /* foo(args...) */
-    | LEFT_PAREN argument_list ELLIPSIS RIGHT_PAREN
-
-    | LEFT_PAREN argument_list ELLIPSIS COMMA RIGHT_PAREN
+      "(" ")"
+    | "(" expression argument_expression_tail ")"
+    | "(" non_expression_type argument_type_tail ")"
 ;
 
-/* ---------- Argument list ---------- */
 
-argument_list:
-      expression
-    | argument_list COMMA expression
-;
+/* ---------- Продолжение после выражения ---------- */
 
-/* ---------- Optional expression ---------- */
-
-optional_expression:
+argument_expression_tail:
       %empty
-    | expression
+    | ","
+    | "..."
+    | "..." ","
+    | "," expression argument_expression_tail
+;
+
+
+/* ---------- Продолжение после типа ---------- */
+
+argument_type_tail:
+      %empty
+    | ","
+    | "..."
+    | "..." ","
+    | "," expression argument_expression_tail
 ;
 
 
 /* ============================================================
    TYPE ASSERTION
-
-   value.(Type)
    ============================================================ */
 
+
+/* ---------- Утверждение типа: value.(Type) ---------- */
+
 type_assertion:
-    DOT LEFT_PAREN type RIGHT_PAREN
+      "." "(" type ")"
 ;
 
 
 /* ============================================================
-   COMPOSITE LITERAL
-
-   Point{x: 10}
-   []int{1, 2, 3}
-   map[string]int{"a": 1}
+   COMPOSITE LITERALS
    ============================================================ */
 
+
+/* ---------- Составной литерал ---------- */
+
 composite_literal:
-    composite_literal_type literal_value
+      composite_literal_type non_name_literal_value
 ;
+
+
+/* ---------- Тип составного литерала ---------- */
 
 composite_literal_type:
-      type_name
-    | array_type
-    | slice_type
+      array_type
     | map_type
     | struct_type
-
-    /* [...]int{1, 2, 3} */
-    | LEFT_BRACKET ELLIPSIS RIGHT_BRACKET type
+    | "[" "..." "]" type
 ;
+
+
+/* ---------- Содержимое литерала ---------- */
 
 literal_value:
-      LEFT_BRACE RIGHT_BRACE
-    | LEFT_BRACE literal_elements RIGHT_BRACE
-    | LEFT_BRACE literal_elements COMMA RIGHT_BRACE
+      "{" "}"
+    | "{" literal_elements "}"
+    | "{" literal_elements "," "}"
 ;
+
+
+/* ---------- Содержимое литерала неименованного типа ---------- */
+
+non_name_literal_value:
+      block_open "}"
+    | block_open literal_elements "}"
+    | block_open literal_elements "," "}"
+;
+
+
+/* ---------- Список элементов ---------- */
 
 literal_elements:
       literal_element
-    | literal_elements COMMA literal_element
+    | literal_elements "," literal_element
 ;
 
+
+/* ---------- Один элемент ---------- */
+
 literal_element:
+      literal_element_value
+    | literal_key ":" literal_element_value
+;
+
+
+/* ---------- Значение элемента ---------- */
+
+literal_element_value:
       expression
-
-    /* key: value / field: value */
-    | expression COLON expression
-
-    /* вложенный литерал без повторения типа:
-       [][]int{{1, 2}, {3, 4}}
-    */
     | literal_value
+;
 
-    | expression COLON literal_value
+
+/* ---------- Ключ или имя поля ---------- */
+
+literal_key:
+      expression
+    | literal_value
 ;
 
 
 /* ============================================================
    FUNCTION LITERAL
-
-   func(x int) int {
-       return x
-   }
    ============================================================ */
 
+
+/* ---------- Анонимная функция ---------- */
+
 function_literal:
-    KW_FUNC function_signature function_body
+      KW_FUNC function_signature function_body
 ;
 
 
@@ -517,18 +1082,21 @@ function_literal:
    IF
    ============================================================ */
 
+
+/* ---------- Условный оператор ---------- */
+
 if_statement:
-      KW_IF expression block
+      KW_IF expression loop_body optional_else
+    | KW_IF optional_simple_statement ";" expression loop_body optional_else
+;
 
-    | KW_IF expression block KW_ELSE block
 
-    | KW_IF expression block KW_ELSE if_statement
+/* ---------- Необязательная ветвь else ---------- */
 
-    | KW_IF simple_statement SEMICOLON expression block
-
-    | KW_IF simple_statement SEMICOLON expression block KW_ELSE block
-
-    | KW_IF simple_statement SEMICOLON expression block KW_ELSE if_statement
+optional_else:
+      %empty
+    | KW_ELSE block
+    | KW_ELSE if_statement
 ;
 
 
@@ -536,42 +1104,30 @@ if_statement:
    FOR
    ============================================================ */
 
+
+/* ---------- Варианты цикла for ---------- */
+
 for_statement:
-      KW_FOR block
-
-    | KW_FOR expression block
-
-    | KW_FOR for_clause block
-
-    | KW_FOR range_clause block
+      KW_FOR loop_body
+    | KW_FOR expression loop_body
+    | KW_FOR for_clause loop_body
+    | KW_FOR range_clause loop_body
 ;
 
-/* ---------- Optional simple statement ---------- */
-
-optional_simple_statement:
-      %empty
-    | simple_statement
-;
 
 /* ---------- Классический for ---------- */
 
 for_clause:
-    optional_simple_statement
-    SEMICOLON
-    optional_expression
-    SEMICOLON
-    optional_simple_statement
+      optional_simple_statement ";" optional_expression ";" optional_simple_statement
 ;
 
 
-/* ---------- Range ---------- */
+/* ---------- Цикл range ---------- */
 
 range_clause:
       KW_RANGE expression
-
-    | expression_list ASSIGN KW_RANGE expression
-
-    | identifier_list DECLARE_ASSIGN KW_RANGE expression
+    | expression_list "=" KW_RANGE expression
+    | expression_list ":=" KW_RANGE expression
 ;
 
 
@@ -579,717 +1135,293 @@ range_clause:
    SWITCH
    ============================================================ */
 
-/*
+
+/* ---------- Виды switch ---------- */
+
 switch_statement:
-    TODO
+      expression_switch_statement
+    | type_switch_statement
 ;
-*/
 
 
-/* ---------- Список case ---------- */
+/* ---------- Switch по выражению ---------- */
 
-/*
-switch_cases:
-    TODO
+expression_switch_statement:
+      KW_SWITCH expression_switch_header BODY_BRACE expression_cases "}"
 ;
-*/
 
 
-/* ---------- Один элемент switch ---------- */
+/* ---------- Заголовок switch ---------- */
 
-/*
-switch_case:
-    TODO
+expression_switch_header:
+      %empty
+    | expression
+    | simple_statement ";" optional_expression
+    | ";" optional_expression
 ;
-*/
 
 
-/* ---------- case ---------- */
+/* ---------- Ветви switch ---------- */
 
-/*
-case_clause:
-    TODO
+expression_cases:
+      %empty
+    | expression_cases expression_case_clause
 ;
-*/
 
 
-/* ---------- default ---------- */
+/* ---------- Заголовок case или default ---------- */
 
-/*
-default_clause:
-    TODO
+expression_case_clause:
+      KW_CASE expression_list ":" statement_list
+    | KW_DEFAULT ":" statement_list
 ;
-*/
 
 
 /* ============================================================
    TYPE SWITCH
    ============================================================ */
 
-/*
+
+/* ---------- Switch по типу ---------- */
+
 type_switch_statement:
-    TODO
+      KW_SWITCH type_switch_guard BODY_BRACE type_cases "}"
+    | KW_SWITCH simple_statement ";" type_switch_guard BODY_BRACE type_cases "}"
 ;
-*/
+
+
+/* ---------- Проверка типа в заголовке ---------- */
+
+type_switch_guard:
+      primary_expression "." "(" KW_TYPE ")"
+    | expression_list ":=" primary_expression "." "(" KW_TYPE ")"
+;
+
+
+/* ---------- Ветви type switch ---------- */
+
+type_cases:
+      %empty
+    | type_cases type_case_clause
+;
+
+
+/* ---------- Заголовок case или default ---------- */
+
+type_case_clause:
+      KW_CASE type_case_list ":" statement_list
+    | KW_DEFAULT ":" statement_list
+;
+
+
+/* ---------- Список типов в case ---------- */
+
+type_case_list:
+      type
+    | type_case_list "," type
+;
 
 
 /* ============================================================
    SELECT
    ============================================================ */
 
-/*
+
+/* ---------- Оператор select ---------- */
+
 select_statement:
-    TODO
+      KW_SELECT BODY_BRACE select_cases "}"
 ;
-*/
 
 
-/* ---------- Cases внутри select ---------- */
+/* ---------- Ветви select ---------- */
 
-/*
 select_cases:
-    TODO
+      %empty
+    | select_cases select_case
 ;
-*/
 
 
-/* ---------- Один case внутри select ---------- */
+/* ---------- Заголовок case или default ---------- */
 
-/*
 select_case:
-    TODO
+      KW_CASE communication_clause ":" statement_list
+    | KW_DEFAULT ":" statement_list
 ;
-*/
+
+
+/* ---------- Операция в ветви select ---------- */
+
+communication_clause:
+      send_statement
+    | expression
+    | expression_list "=" expression
+    | expression_list ":=" expression
+;
 
 
 /* ============================================================
    CHANNEL SEND
-
-   channel <- value
    ============================================================ */
 
-/*
+
+/* ---------- Отправка в канал: channel <- value ---------- */
+
 send_statement:
-    TODO
-;
-*/
-
-
-/* ============================================================
-   CHANNEL RECEIVE
-
-   <-channel
-   ============================================================ */
-
-/*
-receive_expression:
-    TODO
-;
-*/
-
-
-/* ============================================================
-   IMPORTS
-   ============================================================ */
-
-
-imports:
-    %empty
-  | imports import_declaration SEMICOLON
-;
-
-
-
-/* ---------- Import declaration ---------- */
-
-import_declaration:
-    KW_IMPORT import_spec
-  | KW_IMPORT LEFT_PAREN import_spec_list RIGHT_PAREN
-;
-
-
-/* ---------- Один import ---------- */
-
-import_spec_list:
-    %empty
-  | import_spec_list import_spec SEMICOLON
-;
-
-import_spec:
-    STRING_LITERAL
-    {
-        ParserLogger::Value("import", *$1);
-        delete $1;
-    }
-  | RAW_STRING_LITERAL
-    {
-        ParserLogger::Value("import", *$1);
-        delete $1;
-    }
-  | DOT STRING_LITERAL
-    {
-        delete $2;
-    }
-  | IDENTIFIER STRING_LITERAL
-    {
-        delete $1;
-        delete $2;
-    }
-;
-
-
-/* ---------- Группа import ---------- */
-
-/*
-import_group:
-    TODO
-;
-*/
-
-
-/* ============================================================
-   DECLARATIONS
-   ============================================================ */
-
-
-declarations:
-    %empty
-  | declarations declaration SEMICOLON
-  | declarations function_declaration SEMICOLON
-  | declarations method_declaration SEMICOLON
-  | declarations error SEMICOLON
-    {
-        yyerrok;
-    }
-;
-
-
-
-/* ---------- Общее declaration ---------- */
-
-
-declaration:
-    variable_declaration
-  | constant_declaration
-  | type_declaration
-;
-
-
-
-/* ============================================================
-   VARIABLES
-   ============================================================ */
-
-
-variable_declaration:
-    KW_VAR variable_spec
-  | KW_VAR LEFT_PAREN variable_spec_list RIGHT_PAREN
-;
-
-
-
-/* ---------- Один var spec ---------- */
-
-variable_spec_list:
-    %empty
-  | variable_spec_list variable_spec SEMICOLON
-;
-
-variable_spec:
-    identifier_list type
-  | identifier_list type ASSIGN expression_list
-  | identifier_list ASSIGN expression_list
-;
-
-
-/* ---------- Группа var ---------- */
-
-/*
-variable_group:
-    TODO
-;
-*/
-
-
-/* ============================================================
-   CONSTANTS
-   ============================================================ */
-
-constant_declaration:
-    KW_CONST constant_spec
-  | KW_CONST LEFT_PAREN constant_spec_list RIGHT_PAREN
-;
-
-
-/* ---------- Один const spec ---------- */
-
-constant_spec_list:
-    %empty
-  | constant_spec_list constant_spec SEMICOLON
-;
-
-constant_spec:
-    identifier_list
-  | identifier_list type ASSIGN expression_list
-  | identifier_list ASSIGN expression_list
-;
-
-
-/* ---------- Группа const ---------- */
-
-/*
-constant_group:
-    TODO
-;
-*/
-
-
-/* ============================================================
-   TYPE DECLARATION
-   ============================================================ */
-
-type_declaration:
-    KW_TYPE type_spec
-  | KW_TYPE LEFT_PAREN type_spec_list RIGHT_PAREN
-;
-
-
-/* ---------- Один type spec ---------- */
-
-type_spec_list:
-    %empty
-  | type_spec_list type_spec SEMICOLON
-;
-
-type_spec:
-    IDENTIFIER type
-    {
-        delete $1;
-    }
-  | IDENTIFIER ASSIGN type
-    {
-        delete $1;
-    }
+      expression "<-" expression
 ;
 
 
 /* ============================================================
-   TYPES
+   BLOCKS
    ============================================================ */
 
 
-/* ---------- Общий тип ---------- */
-
-type:
-    type_name
-  | pointer_type
-  | array_type
-  | slice_type
-  | map_type
-  | struct_type
-  | interface_type
-  | function_type
-  | channel_type
-;
-
-
-/* ---------- Имя типа ---------- */
-
-type_name:
-    IDENTIFIER
-    {
-        delete $1;
-    }
-;
-
-
-/* ============================================================
-   ARRAY TYPE
-
-   [10]int
-   ============================================================ */
-
-array_type:
-    LEFT_BRACKET expression RIGHT_BRACKET type
-;
-
-
-/* ============================================================
-   SLICE TYPE
-
-   []int
-   ============================================================ */
-
-slice_type:
-    LEFT_BRACKET RIGHT_BRACKET type
-;
-
-
-/* ============================================================
-   POINTER TYPE
-
-   *int
-   ============================================================ */
-
-pointer_type:
-    MULTIPLY type
-;
-
-
-/* ============================================================
-   MAP TYPE
-
-   map[string]int
-   ============================================================ */
-
-map_type:
-    KW_MAP LEFT_BRACKET type RIGHT_BRACKET type
-;
-
-
-/* ============================================================
-   STRUCT TYPE
-   ============================================================ */
-
-struct_type:
-    KW_STRUCT LEFT_BRACE field_declarations RIGHT_BRACE
-;
-
-
-/* ---------- Поля struct ---------- */
-
-field_declarations:
-    %empty
-  | field_declarations field_declaration SEMICOLON
-;
-
-
-/* ---------- Одно поле ---------- */
-
-field_declaration:
-    identifier_list type
-  | type
-;
-
-
-/* ============================================================
-   INTERFACE TYPE
-   ============================================================ */
-
-interface_type:
-    KW_INTERFACE LEFT_BRACE interface_elements RIGHT_BRACE
-;
-
-
-/* ---------- Список элементов interface ---------- */
-
-interface_elements:
-    %empty
-  | interface_elements interface_element SEMICOLON
-;
-
-
-/* ---------- Один элемент interface ---------- */
-
-interface_element:
-    IDENTIFIER function_signature
-    {
-        delete $1;
-    }
-  | type_name
-;
-
-
-/* ============================================================
-   FUNCTION TYPE
-   ============================================================ */
-
-function_type:
-    KW_FUNC function_signature
-;
-
-
-/* ============================================================
-   CHANNEL TYPE
-
-   chan int
-   <-chan int
-   chan<- int
-   ============================================================ */
-
-channel_type:
-    chan_prefix type
-  | CHANNEL_ARROW KW_CHAN type
-;
-
-chan_prefix:
-    KW_CHAN %prec CHAN_BARE
-  | KW_CHAN CHANNEL_ARROW
-;
-
-
-/* ============================================================
-   FUNCTIONS
-   ============================================================ */
-
-
-/* ---------- Function declaration ---------- */
-
-function_declaration:
-    KW_FUNC IDENTIFIER function_signature function_body
-    {
-        ParserLogger::Value("func", *$2);
-        delete $2;
-    }
-  | KW_FUNC IDENTIFIER function_signature
-    {
-        ParserLogger::Value("func signature", *$2);
-        delete $2;
-    }
-;
-
-
-/* ---------- Имя функции ---------- */
-
-/*
-function_name:
-    TODO
-;
-*/
-
-
-/* ---------- Сигнатура ---------- */
-
-function_signature:
-    parameters
-  | parameters result
-;
-
-
-/* ---------- Параметры ---------- */
-
-parameters:
-    LEFT_PAREN RIGHT_PAREN
-  | LEFT_PAREN parameter_list RIGHT_PAREN
-  | LEFT_PAREN parameter_list COMMA RIGHT_PAREN
-;
-
-
-/* ---------- Список параметров ---------- */
-
-parameter_list:
-    parameter
-  | parameter_list COMMA parameter
-;
-
-
-/* ---------- Один параметр ---------- */
-
-parameter:
-    type
-  | IDENTIFIER type
-    {
-        delete $1;
-    }
-  | IDENTIFIER ELLIPSIS type
-    {
-        delete $1;
-    }
-  | ELLIPSIS type
-;
-
-
-/* ---------- Возвращаемое значение ---------- */
-
-result:
-    type
-  | parameters
-;
-
-
-/* ---------- Тело функции ---------- */
-
-function_body:
-    block
-;
-
-
-/* ============================================================
-   METHODS
-   ============================================================ */
-
-method_declaration:
-    KW_FUNC receiver IDENTIFIER function_signature function_body
-    {
-        ParserLogger::Value("method", *$3);
-        delete $3;
-    }
-  | KW_FUNC receiver IDENTIFIER function_signature
-    {
-        ParserLogger::Value("method signature", *$3);
-        delete $3;
-    }
-;
-
-
-/* ---------- Receiver ---------- */
-
-receiver:
-    parameters
-;
-
-
-/* ============================================================
-   BLOCK
-
-   {
-       ...
-   }
-   ============================================================ */
+/* ---------- Блок ---------- */
 
 block:
-    LEFT_BRACE statement_list RIGHT_BRACE
+      block_open statement_list "}"
 ;
 
 
-/* ============================================================
-   STATEMENT LIST
+/* ---------- Начало блока и контекст лексера ---------- */
 
-   Набор инструкций внутри block.
-   ============================================================ */
+block_open:
+      "{"
+    | BODY_BRACE { LexerSupport::ResumeHeader(); }
+;
+
+
+/* ---------- Тело управляющей конструкции ---------- */
+
+loop_body:
+      BODY_BRACE statement_list "}"
+;
+
+
+/* ---------- Список инструкций ---------- */
 
 statement_list:
-    %empty
-  | statement_list statement SEMICOLON
-  | statement_list error SEMICOLON
-    {
-        yyerrok;
-    }
+      %empty
+    | ";" statement_list
+    | statement ";" statement_list
+    | statement
 ;
 
-/* ============================================================
-   ОБЩИЙ STATEMENT
 
-   Главная точка входа для любой инструкции.
+/* ============================================================
+   STATEMENTS
    ============================================================ */
+
+
+/* ---------- Виды инструкций ---------- */
 
 statement:
-    declaration_statement
-  | simple_statement
-  | return_statement
-  | break_statement
-  | continue_statement
-  | goto_statement
-  | fallthrough_statement
-  | labeled_statement
-  | defer_statement
-  | go_statement
-  | block
-  | empty_statement
+      declaration_statement
+    | simple_statement
+    | return_statement
+    | break_statement
+    | continue_statement
+    | goto_statement
+    | fallthrough_statement
+    | labeled_statement
+    | defer_statement
+    | go_statement
+    | block
+    | if_statement
+    | for_statement
+    | switch_statement
+    | select_statement
 ;
 
 
-/* ============================================================
-   DECLARATION STATEMENT
-
-   var / const / type внутри блока
-   ============================================================ */
+/* ---------- Объявление внутри блока ---------- */
 
 declaration_statement:
-    declaration
+      declaration
 ;
 
 
-/* ============================================================
-   SIMPLE STATEMENT
-
-   assignment
-   :=
-   ++
-   --
-   expression statement
-   send
-   ============================================================ */
+/* ---------- Простая инструкция ---------- */
 
 simple_statement:
-    expression_statement
-  | increment_statement
-  | decrement_statement
-  | assignment
-  | short_variable_declaration
+      expression_statement
+    | send_statement
+    | increment_statement
+    | decrement_statement
+    | assignment
+    | short_variable_declaration
 ;
 
 
-/* ============================================================
-   EXPRESSION STATEMENT
-   ============================================================ */
+/* ---------- Инструкция-выражение ---------- */
 
 expression_statement:
-    expression
+      expression
+;
+
+
+/* ---------- Необязательная простая инструкция ---------- */
+
+optional_simple_statement:
+      %empty
+    | simple_statement
 ;
 
 
 /* ============================================================
    ASSIGNMENT
-
-   x = y
-   x += y
-   x <<= y
    ============================================================ */
+
+
+/* ---------- Присваивание ---------- */
 
 assignment:
-    expression_list assignment_operator expression_list
+      expression_list assignment_operator expression_list
 ;
 
-/* ---------- Оператор присваивания ---------- */
+
+/* ---------- Операторы присваивания ---------- */
 
 assignment_operator:
-    ASSIGN
-  | PLUS_ASSIGN
-  | MINUS_ASSIGN
-  | MULTIPLY_ASSIGN
-  | DIVIDE_ASSIGN
-  | MODULO_ASSIGN
-  | BIT_AND_ASSIGN
-  | BIT_OR_ASSIGN
-  | BIT_XOR_ASSIGN
-  | LEFT_SHIFT_ASSIGN
-  | RIGHT_SHIFT_ASSIGN
-  | BIT_CLEAR_ASSIGN
+      "="
+    | "+="
+    | "-="
+    | "*="
+    | "/="
+    | "%="
+    | "&="
+    | "|="
+    | "^="
+    | "&^="
+    | "<<="
+    | ">>="
 ;
 
 
-/* ============================================================
-   SHORT VARIABLE DECLARATION
-
-   x := 10
-   x, y := 10, 20
-   ============================================================ */
+/* ---------- Короткое объявление через := ---------- */
 
 short_variable_declaration:
-    expression_list DECLARE_ASSIGN expression_list
+      expression_list ":=" expression_list
 ;
 
 
 /* ============================================================
-   INCREMENT
-
-   x++
+   INCREMENT AND DECREMENT
    ============================================================ */
+
+
+/* ---------- Инкремент ---------- */
 
 increment_statement:
-    expression INCREMENT
+      expression "++"
 ;
 
 
-/* ============================================================
-   DECREMENT
-
-   x--
-   ============================================================ */
+/* ---------- Декремент ---------- */
 
 decrement_statement:
-    expression DECREMENT
+      expression "--"
 ;
 
 
@@ -1297,9 +1429,12 @@ decrement_statement:
    RETURN
    ============================================================ */
 
+
+/* ---------- Возврат из функции ---------- */
+
 return_statement:
-    KW_RETURN
-  | KW_RETURN expression_list
+      KW_RETURN
+    | KW_RETURN expression_list
 ;
 
 
@@ -1307,12 +1442,12 @@ return_statement:
    BREAK
    ============================================================ */
 
+
+/* ---------- Выход из цикла или ветви ---------- */
+
 break_statement:
-    KW_BREAK
-  | KW_BREAK IDENTIFIER
-    {
-        delete $2;
-    }
+      KW_BREAK
+    | KW_BREAK identifier
 ;
 
 
@@ -1320,12 +1455,12 @@ break_statement:
    CONTINUE
    ============================================================ */
 
+
+/* ---------- Следующая итерация цикла ---------- */
+
 continue_statement:
-    KW_CONTINUE
-  | KW_CONTINUE IDENTIFIER
-    {
-        delete $2;
-    }
+      KW_CONTINUE
+    | KW_CONTINUE identifier
 ;
 
 
@@ -1333,11 +1468,11 @@ continue_statement:
    GOTO
    ============================================================ */
 
+
+/* ---------- Переход к метке ---------- */
+
 goto_statement:
-    KW_GOTO IDENTIFIER
-    {
-        delete $2;
-    }
+      KW_GOTO identifier
 ;
 
 
@@ -1345,115 +1480,116 @@ goto_statement:
    FALLTHROUGH
    ============================================================ */
 
+
+/* ---------- Переход в следующую ветвь switch ---------- */
+
 fallthrough_statement:
-    KW_FALLTHROUGH
+      KW_FALLTHROUGH
 ;
 
 
 /* ============================================================
    LABEL
-
-   start:
    ============================================================ */
 
+
+/* ---------- Метка ---------- */
+
 labeled_statement:
-    IDENTIFIER COLON statement
-    {
-        delete $1;
-    }
+      identifier ":" statement
+    | identifier ":"
 ;
 
 
 /* ============================================================
    DEFER
-
-   defer foo()
    ============================================================ */
 
+
+/* ---------- Отложенный вызов ---------- */
+
 defer_statement:
-    KW_DEFER expression
+      KW_DEFER expression
 ;
+
 
 /* ============================================================
    GO
-
-   go foo()
    ============================================================ */
+
+
+/* ---------- Запуск вызова в goroutine ---------- */
 
 go_statement:
-    KW_GO expression
+      KW_GO expression
 ;
 
 
 /* ============================================================
-   IDENTIFIER LIST
-
-   x
-   x, y
-   x, y, z
+   LISTS AND OPTIONAL ELEMENTS
    ============================================================ */
+
+
+/* ---------- Идентификатор ---------- */
+
+identifier:
+      IDENTIFIER {}
+;
+
+
+/* ---------- Список идентификаторов ---------- */
 
 identifier_list:
-    IDENTIFIER
-    {
-        delete $1;
-    }
-  | identifier_list COMMA IDENTIFIER
-    {
-        delete $3;
-    }
+      identifier %prec NAME_END
+    | identifier_list "," identifier
 ;
 
 
-/* ============================================================
-   EXPRESSION LIST
-
-   x
-   x, y
-   x + 10, foo()
-   ============================================================ */
+/* ---------- Список выражений ---------- */
 
 expression_list:
-    expression
-  | expression_list COMMA expression
+      expression
+    | expression_list "," expression
 ;
 
 
-/* ============================================================
-   EMPTY STATEMENT
-   ============================================================ */
+/* ---------- Содержимое квадратных скобок ---------- */
 
-empty_statement:
-    %empty
+bracket_arguments:
+      expression
+    | non_expression_type
+    | bracket_arguments "," expression
+    | bracket_arguments "," non_expression_type
 ;
 
 
-/* ============================================================
-   ERROR RECOVERY
+/* ---------- Общая запись квадратных скобок ---------- */
 
-   Позже здесь можно добавить правила с системным
-   символом Bison:
-
-       error
-
-   Например синхронизацию по SEMICOLON.
-   ============================================================ */
-
-/*
-error_statement:
-    TODO
+bracket_group:
+      "[" "]"
+    | "[" bracket_arguments "]"
+    | "[" bracket_arguments "," "]"
 ;
-*/
+
+
+/* ---------- Необязательное выражение ---------- */
+
+optional_expression:
+      %empty
+    | expression
+;
+
+
+/* ---------- Необязательная завершающая запятая ---------- */
+
+optional_trailing_comma:
+      %empty
+    | ","
+;
 
 %%
 
-
-/* ---------- Ошибки ---------- */
-
-void yyerror(const char* message)
-{
-    ParserLogger::Error(
-        yylineno,
-        message
-    );
+void yyerror(const char* message) {
+    // A lexical error already has a specific diagnostic.
+    if (!LexerSupport::failed) LexerSupport::Error(yylloc, message);
 }
