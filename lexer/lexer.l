@@ -1,33 +1,14 @@
-%option noyywrap yylineno
+%option noyywrap nodefault nounput noinput
 
 %{
 
-/* 
-Нюансы:
-1. все варианты идентификаторов реализовывать не надо - это на доп. баллы
-2. супер длинные числа реализовывать не надо - это на доп. баллы
-3. Момент с a multiline-comment + b - будет a; +b;
+/* Flex records token spellings and source ranges. Rune tokens carry Unicode values. */
 
- */
-
-/* глобальные переменные, бибилотеки, функции и т.д. */
-
-#include <cstdio>
-#include <iostream>
 #include <string>
-#include "extension/logger/logger.h"
-#include "extension/Parser/Parser.h"
-#include "extension/buffer/Buffer.h"
-#include "../parser/parser.tab.hpp"
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include "LexerSupport.h"
+#include "parser.tab.hpp"
 
 using std::string;
-
-/* буфер где будем хранить текст для строковых литералов */
-Buffer buffer;
 
 /* флаг проверки на корректность строковых литералов */
 bool stringInvalid = false;
@@ -37,42 +18,25 @@ bool rawStringInvalid = false;
 /* Флаг автоматической вставки точки с запятой */
 bool autoSemi = false;
 
-#define RETURN_TOKEN(token, semi)       \
-    do {                                \
-        Logger::Token(#token);          \
-        autoSemi = (semi);              \
-        return token;                   \
+static int InvalidToken() {
+    autoSemi = false;
+    return LEXICAL_ERROR;
+}
+
+#define YY_USER_ACTION LexerSupport::Advance(yytext, yyleng, yylloc);
+
+#define RETURN_TOKEN(token, semi) \
+    do { \
+        autoSemi = (semi); \
+        return LexerSupport::ClassifyToken(token); \
     } while (0)
 
-
-#define RETURN_INTEGER(token, expr, semi)   \
-    do {                                    \
-        long long value = (expr);           \
-        Logger::Value(#token, value);       \
-        yylval.integerValue = value;        \
-        autoSemi = (semi);                  \
-        return token;                       \
-    } while (0)
-
-
-#define RETURN_FLOAT(token, expr, semi)     \
-    do {                                    \
-        double value = (expr);              \
-        Logger::Value(#token, value);       \
-        yylval.floatValue = value;          \
-        autoSemi = (semi);                  \
-        return token;                       \
-    } while (0)
-
-
-#define RETURN_STRING(token, expr, semi)    \
-    do {                                    \
-        std::string value = (expr);         \
-        Logger::Value(#token, value);       \
-        yylval.stringValue =                \
-            new std::string(value);         \
-        autoSemi = (semi);                  \
-        return token;                       \
+// Text tokens preserve exact spelling, including large Go constants and escapes.
+#define RETURN_TEXT(token) \
+    do { \
+        yylval.stringValue = LexerSupport::Text(yylloc); \
+        autoSemi = true; \
+        return token; \
     } while (0)
 
 %}
@@ -104,7 +68,6 @@ LETTER          ({ASCII_LETTER}|{UTF8_CHAR})
 DIGIT           {ASCII_DIGIT}
 
 IDENTIFIER      {LETTER}({LETTER}|{DIGIT})*
-
 
 /* ---------- Целочисленные литералы ---------- */
 
@@ -160,7 +123,7 @@ RUNE_CHAR           ({ASCII_RUNE_CHAR}|{UTF8_CHAR})
 
 RUNE_LITERAL        \'({RUNE_CHAR}|{RUNE_ESCAPE})\'
 
-/* ---------- Стороковые литералы  ---------- */
+/* ---------- Строковые литералы  ---------- */
 
 STRING_ESCAPE       (\\[abfnrtv\\"]|{OCTAL_BYTE_ESCAPE}|{HEX_BYTE_ESCAPE}|{UNICODE_4_ESCAPE}|{UNICODE_8_ESCAPE})
 ASCII_STRING_CHAR   [^\\\"\n\200-\377]
@@ -171,7 +134,14 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 
 %%
 
-    /* Комментари внутри этого блока пишутся вот в этом синтаксесе и обязательно перед комментаривем табуляцию */
+    /* Flex rule-section comments must be indented. */
+
+\xEF\xBB\xBF {
+    if (yylloc.begin != 0) {
+        LexerSupport::Error(yylloc, "BOM is only allowed at the start of a file");
+        return LEXICAL_ERROR;
+    }
+}
 
     /* ---------- Ключевые слова ---------- */
 
@@ -203,153 +173,113 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 
     /* ---------- Мнимые литералы ---------- */
 
-{IMAGINARY_LITERAL} {RETURN_FLOAT(IMAGINARY_LITERAL, Parser::Imaginary(yytext), true);}
-    
+{IMAGINARY_LITERAL} {RETURN_TEXT(IMAGINARY_LITERAL);}
+
     /* ---------- Литералы с плавающей точкой ---------- */
 
-{HEX_FLOAT} { RETURN_FLOAT(HEX_FLOAT_LITERAL, Parser::Float(yytext), true); }
+{HEX_FLOAT} { RETURN_TEXT(HEX_FLOAT_LITERAL); }
 
-{DECIMAL_FLOAT} { RETURN_FLOAT(FLOAT_LITERAL, Parser::Float(yytext), true); }
+{DECIMAL_FLOAT} { RETURN_TEXT(FLOAT_LITERAL); }
 
     /* ---------- Целочисленные литералы ---------- */
 
-{BINARY_LITERAL} { RETURN_INTEGER(BINARY_LITERAL, Parser::Integer(yytext), true); }
+{BINARY_LITERAL} { RETURN_TEXT(BINARY_LITERAL); }
 
-{OCTAL_LITERAL} {RETURN_INTEGER(OCTAL_LITERAL, Parser::Integer(yytext), true); }
+{OCTAL_LITERAL} {RETURN_TEXT(OCTAL_LITERAL); }
 
-{OLD_OCTAL_LITERAL} {RETURN_INTEGER(OCTAL_LITERAL, Parser::Integer(yytext), true); }
+{OLD_OCTAL_LITERAL} {RETURN_TEXT(OCTAL_LITERAL); }
 
-{HEX_LITERAL} {RETURN_INTEGER(HEX_LITERAL, Parser::Integer(yytext), true); }
+{HEX_LITERAL} {RETURN_TEXT(HEX_LITERAL); }
 
-{DECIMAL_LITERAL} { RETURN_INTEGER(DECIMAL_LITERAL, Parser::Integer(yytext), true); }
-    
+{DECIMAL_LITERAL} { RETURN_TEXT(DECIMAL_LITERAL); }
+
     /* ---------- ошибки ------------- */
 
 {BINARY_CANDIDATE} {
 
-    Logger::Error("Invalid binary literal '" + string(yytext) + "' at line " + std::to_string(yylineno));
+    LexerSupport::Error(yylloc, "Invalid binary literal '" + string(yytext) + "'");
 
-    autoSemi = false;
-
-    return LEXICAL_ERROR;
+    return InvalidToken();
 }
 
 {OCTAL_CANDIDATE} {
 
-    Logger::Error("Invalid octal literal '" + string(yytext) + "' at line " + std::to_string(yylineno));
+    LexerSupport::Error(yylloc, "Invalid octal literal '" + string(yytext) + "'");
 
-    autoSemi = false;
-
-    return LEXICAL_ERROR;
+    return InvalidToken();
 }
 
 {HEX_CANDIDATE} {
-   
-   Logger::Error("Invalid hexadecimal literal '" + string(yytext) + "' at line " + std::to_string(yylineno));
 
-    autoSemi = false;
+   LexerSupport::Error(yylloc, "Invalid hexadecimal literal '" + string(yytext) + "'");
 
-    return LEXICAL_ERROR;
+    return InvalidToken();
 }
 
 {DECIMAL_CANDIDATE} {
-   
-   Logger::Error("Invalid numeric literal '" + string(yytext) + "' at line " + std::to_string(yylineno));
 
-    autoSemi = false;
+   LexerSupport::Error(yylloc, "Invalid numeric literal '" + string(yytext) + "'");
 
-    return LEXICAL_ERROR;
+    return InvalidToken();
 }
 
     /* ---------- Символьные литералы ---------- */
 
 {RUNE_LITERAL} {
-    long long value = Parser::Rune(yytext);
+    if (!LexerSupport::ValidRune(yytext)) {
 
-    if (!Parser::IsValidUnicodeCodePoint(value)) {
-        
-        Logger::Error("Invalid rune literal '" + string(yytext) + "' at line " + std::to_string(yylineno));
+        LexerSupport::Error(yylloc, "Invalid rune literal '" + string(yytext) + "'");
 
-        autoSemi = false;
-        return LEXICAL_ERROR;
+        return InvalidToken();
     }
 
-    RETURN_INTEGER(RUNE_LITERAL, value, true);
+    yylval.integerValue = LexerSupport::RuneValue(yytext);
+    autoSemi = true;
+    return RUNE_LITERAL;
 }
 
 \'[^'\n]*\' {
-   
-   Logger::Error("Invalid rune literal '" + string(yytext) + "' at line " + std::to_string(yylineno));
 
-    autoSemi = false;
+   LexerSupport::Error(yylloc, "Invalid rune literal '" + string(yytext) + "'");
 
-    return LEXICAL_ERROR;
+    return InvalidToken();
 }
 
 \'[^'\n]* {
-    
-    Logger::Error("Unclosed rune literal '" + string(yytext) + "' at line " + std::to_string(yylineno));
 
-    autoSemi = false;
+    LexerSupport::Error(yylloc, "Unclosed rune literal '" + string(yytext) + "'");
 
-    return LEXICAL_ERROR;
+    return InvalidToken();
 }
 
-    /* ---------- Стороковые литералы ---------- */
+    /* ---------- Строковые литералы ---------- */
 
 \" {
-    buffer.Reset(yylineno);
+    LexerSupport::BeginLiteral(yylloc);
     stringInvalid = false;
     BEGIN(STRING);
 }
 
-<STRING>{STRING_CHAR}+ {
-    buffer.Append(yytext);
-}
+<STRING>{STRING_CHAR}+ { /* Source spelling is retained. */ }
 
 <STRING>{STRING_ESCAPE} {
-    
-    string escape = yytext;
-
-    if (escape[1] == 'u' || escape[1] == 'U') {
-
-        long long value =
-            Parser::EscapeValue(escape);
-
-        if (!Parser::IsValidUnicodeCodePoint(value)) {
-            Logger::Error(
-                "Invalid Unicode escape '" + escape +
-                "' at line " + std::to_string(yylineno)
-            );
-
-            stringInvalid = true;
-        }
-        else {
-            buffer.Append(
-                Parser::EscapeToString(escape)
-            );
-        }
-    }
-    else {
-        buffer.Append(
-            Parser::EscapeToString(escape)
-        );
+    if (!LexerSupport::ValidUnicodeEscape(yytext)) {
+        LexerSupport::Error(yylloc, "Invalid Unicode escape '" + string(yytext) + "'");
+        stringInvalid = true;
     }
 }
 
 <STRING>\\. {
-    Logger::Error(
+    LexerSupport::Error(yylloc, 
         "Invalid escape sequence '" + string(yytext) +
-        "' at line " + std::to_string(yylineno)
+        "'"
     );
 
     stringInvalid = true;
 }
 
 <STRING>\\ {
-    /*
-        при hello\\n, где \n не символ а enter.  
-    */
+    stringInvalid = true;
 
 }
 
@@ -358,19 +288,18 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
     BEGIN(INITIAL);
 
     if (stringInvalid) {
-        autoSemi = false;
-        return LEXICAL_ERROR;
+        return InvalidToken();
     }
 
-    RETURN_STRING(STRING_LITERAL, buffer.Get(), true);
+    LexerSupport::FinishLiteral(yylloc);
+    RETURN_TEXT(STRING_LITERAL);
 
 }
 
 <STRING>\n {
-    
-    Logger::Error("Unclosed string literal at line " + std::to_string(buffer.GetStartLine()));
 
-    buffer.Reset(yylineno);
+    LexerSupport::FinishLiteral(yylloc);
+    LexerSupport::Error(yylloc, "Unclosed string literal");
 
     stringInvalid = false;
     autoSemi = false;
@@ -381,8 +310,9 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 <STRING><<EOF>> {
-    
-    Logger::Error("Unclosed string literal at line " + std::to_string(buffer.GetStartLine()));
+
+    LexerSupport::FinishLiteral(yylloc);
+    LexerSupport::Error(yylloc, "Unclosed string literal");
 
     stringInvalid = false;
     autoSemi = false;
@@ -393,48 +323,45 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 <STRING>[\200-\377] {
-    
-    Logger::Error("Invalid UTF-8 sequence at line " + std::to_string(yylineno));
+
+    LexerSupport::Error(yylloc, "Invalid UTF-8 sequence");
 
     stringInvalid = true;
 }
 
-    /* ---------- Необработавыаемые строковые литералы ---------- */
+    /* ---------- Необрабатываемые строковые литералы ---------- */
 
 ` {
-    buffer.Reset(yylineno);
+    LexerSupport::BeginLiteral(yylloc);
     rawStringInvalid = false;
     BEGIN(RAW_STRING);
 }
 
-<RAW_STRING>{RAW_STRING_CHAR}+ {
-    buffer.Append(yytext);
-}
+<RAW_STRING>{RAW_STRING_CHAR}+ { /* Source spelling is retained. */ }
 
-<RAW_STRING>\n {
-    buffer.Append("\n");
-}
+<RAW_STRING>\n { /* Source spelling is retained. */ }
 
 <RAW_STRING>\r {
-    /* удаляется из необратавыемых строк */
+    /* The token keeps the original source, including CR bytes. */
 }
 
 <RAW_STRING>` {
-    
+
     BEGIN(INITIAL);
 
     if (rawStringInvalid) {
-        autoSemi = false;
-        return LEXICAL_ERROR;
+        return InvalidToken();
     }
 
-    RETURN_STRING(RAW_STRING_LITERAL, buffer.Get(), true);
+    LexerSupport::FinishLiteral(yylloc);
+    RETURN_TEXT(RAW_STRING_LITERAL);
 
 }
 
 <RAW_STRING><<EOF>> {
-    
-    Logger::Error("Unclosed raw string literal at line " + std::to_string(buffer.GetStartLine()));
+
+    LexerSupport::FinishLiteral(yylloc);
+    LexerSupport::Error(yylloc, "Unclosed raw string literal");
 
     rawStringInvalid = false;
     autoSemi = false;
@@ -445,8 +372,8 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 <RAW_STRING>[\200-\377] {
-    
-    Logger::Error("Invalid UTF-8 sequence at line " + std::to_string(yylineno));
+
+    LexerSupport::Error(yylloc, "Invalid UTF-8 sequence");
 
     rawStringInvalid = true;
 }
@@ -488,7 +415,10 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 
     /* ---------- Идентификаторы ---------- */
 
-{IDENTIFIER} { RETURN_STRING(IDENTIFIER, string(yytext), true); }
+{IDENTIFIER} {
+    if (!LexerSupport::Identifier(yylloc)) return LEXICAL_ERROR;
+    RETURN_TEXT(IDENTIFIER);
+}
 
     /* ---------- пробелы ---------- */
 [ \t\r]+ {
@@ -540,8 +470,8 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 }
 
 <COMMENT><<EOF>> {
-    
-    Logger::Error("Unclosed multi-line comment on line " + std::to_string(yylineno));
+
+    LexerSupport::Error(yylloc, "Unclosed multi-line comment");
 
     autoSemi = false;
 
@@ -610,6 +540,7 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
 
     /* если файл закончился после токена, а мы должны были вставить ;, то вставляем */
 <INITIAL><<EOF>> {
+    LexerSupport::End(yylloc);
 
     if (autoSemi) {
         RETURN_TOKEN(
@@ -624,39 +555,16 @@ RAW_STRING_CHAR         ({ASCII_RAW_STRING_CHAR}|{UTF8_CHAR})
     /* ---------- Отлавливаем все остальное как ошибку ---------- */
 
 . {
-    
-    Logger::Error("Unknown symbol '" + string(yytext) + "' at line " + std::to_string(yylineno));
 
-    autoSemi = false;
+    LexerSupport::Error(yylloc, "Unknown symbol '" + string(yytext) + "'");
 
-    return LEXICAL_ERROR;
+    return InvalidToken();
 }
 
 %%
 
-int main(int argc, char* argv[]) {
-#ifdef _WIN32
-    SetConsoleCP(CP_UTF8);
-    SetConsoleOutputCP(CP_UTF8);
-#endif
-
-    if (argc > 1) {
-        yyin = fopen(argv[1], "rb");
-
-        if (!yyin) {
-            Logger::Error("Cannot open file");
-            return 1;
-        }
-    }
-
-    #ifdef PARSER_DEBUG
-        /* yydebug = 1; */
-    #endif
-
-    int result = yyparse();
-
-    if (argc > 1)
-        fclose(yyin);
-
-    return result;
+void ResetLexer() {
+    BEGIN(INITIAL);
+    autoSemi = false;
+    stringInvalid = rawStringInvalid = false;
 }
