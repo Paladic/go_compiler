@@ -1,0 +1,1 @@
+package p;const(x;y=2)

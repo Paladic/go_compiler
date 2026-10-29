@@ -1,0 +1,1 @@
+package p;type T int;func(t **T) M(){}

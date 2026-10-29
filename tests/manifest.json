@@ -1,0 +1,646 @@
+[
+  {
+    "file": "valid/package_only.go",
+    "valid": true
+  },
+  {
+    "file": "valid/imports.go",
+    "valid": true
+  },
+  {
+    "file": "valid/variables.go",
+    "valid": true
+  },
+  {
+    "file": "valid/constants.go",
+    "valid": true
+  },
+  {
+    "file": "valid/type_alias.go",
+    "valid": true
+  },
+  {
+    "file": "valid/type_definition.go",
+    "valid": true
+  },
+  {
+    "file": "valid/literals.go",
+    "valid": true
+  },
+  {
+    "file": "valid/unicode_identifiers.go",
+    "valid": true
+  },
+  {
+    "file": "valid/operator_precedence.go",
+    "valid": true
+  },
+  {
+    "file": "valid/operator_associativity.go",
+    "valid": true
+  },
+  {
+    "file": "valid/operator_parentheses.go",
+    "valid": true
+  },
+  {
+    "file": "valid/operators_bits.go",
+    "valid": true
+  },
+  {
+    "file": "valid/operators_comparison.go",
+    "valid": true
+  },
+  {
+    "file": "valid/operators_logic.go",
+    "valid": true
+  },
+  {
+    "file": "valid/operators_unary.go",
+    "valid": true
+  },
+  {
+    "file": "valid/assignment.go",
+    "valid": true
+  },
+  {
+    "file": "valid/short_declaration.go",
+    "valid": true
+  },
+  {
+    "file": "valid/compound_assignment.go",
+    "valid": true
+  },
+  {
+    "file": "valid/increment_decrement.go",
+    "valid": true
+  },
+  {
+    "file": "valid/if_only.go",
+    "valid": true
+  },
+  {
+    "file": "valid/if_else.go",
+    "valid": true
+  },
+  {
+    "file": "valid/if_else_if.go",
+    "valid": true
+  },
+  {
+    "file": "valid/if_initializer.go",
+    "valid": true
+  },
+  {
+    "file": "valid/if_empty_initializer.go",
+    "valid": true
+  },
+  {
+    "file": "valid/if_nested.go",
+    "valid": true
+  },
+  {
+    "file": "valid/if_composite_parenthesized.go",
+    "valid": true
+  },
+  {
+    "file": "valid/for_infinite.go",
+    "valid": true
+  },
+  {
+    "file": "valid/for_condition.go",
+    "valid": true
+  },
+  {
+    "file": "valid/for_classic.go",
+    "valid": true
+  },
+  {
+    "file": "valid/for_empty_clause.go",
+    "valid": true
+  },
+  {
+    "file": "valid/for_missing_init.go",
+    "valid": true
+  },
+  {
+    "file": "valid/for_missing_condition.go",
+    "valid": true
+  },
+  {
+    "file": "valid/for_missing_post.go",
+    "valid": true
+  },
+  {
+    "file": "valid/for_nested.go",
+    "valid": true
+  },
+  {
+    "file": "valid/range_no_variables.go",
+    "valid": true
+  },
+  {
+    "file": "valid/range_one_variable.go",
+    "valid": true
+  },
+  {
+    "file": "valid/range_two_variables.go",
+    "valid": true
+  },
+  {
+    "file": "valid/range_assignment.go",
+    "valid": true
+  },
+  {
+    "file": "valid/range_integer.go",
+    "valid": true
+  },
+  {
+    "file": "valid/range_channel.go",
+    "valid": true
+  },
+  {
+    "file": "valid/range_iterator.go",
+    "valid": true
+  },
+  {
+    "file": "valid/range_composite.go",
+    "valid": true
+  },
+  {
+    "file": "valid/break_continue_labels.go",
+    "valid": true
+  },
+  {
+    "file": "valid/switch_expression.go",
+    "valid": true
+  },
+  {
+    "file": "valid/switch_conditionless.go",
+    "valid": true
+  },
+  {
+    "file": "valid/switch_initializer.go",
+    "valid": true
+  },
+  {
+    "file": "valid/switch_empty.go",
+    "valid": true
+  },
+  {
+    "file": "valid/switch_empty_initializer.go",
+    "valid": true
+  },
+  {
+    "file": "valid/switch_fallthrough.go",
+    "valid": true
+  },
+  {
+    "file": "valid/switch_type.go",
+    "valid": true
+  },
+  {
+    "file": "valid/switch_type_binding.go",
+    "valid": true
+  },
+  {
+    "file": "valid/switch_type_initializer.go",
+    "valid": true
+  },
+  {
+    "file": "valid/select_empty.go",
+    "valid": true
+  },
+  {
+    "file": "valid/select_send.go",
+    "valid": true
+  },
+  {
+    "file": "valid/select_receive.go",
+    "valid": true
+  },
+  {
+    "file": "valid/select_receive_declare.go",
+    "valid": true
+  },
+  {
+    "file": "valid/select_receive_assign.go",
+    "valid": true
+  },
+  {
+    "file": "valid/select_receive_parenthesized.go",
+    "valid": true
+  },
+  {
+    "file": "valid/function_empty.go",
+    "valid": true
+  },
+  {
+    "file": "valid/function_parameters.go",
+    "valid": true
+  },
+  {
+    "file": "valid/function_unnamed_parameters.go",
+    "valid": true
+  },
+  {
+    "file": "valid/function_variadic.go",
+    "valid": true
+  },
+  {
+    "file": "valid/function_multiple_results.go",
+    "valid": true
+  },
+  {
+    "file": "valid/function_named_results.go",
+    "valid": true
+  },
+  {
+    "file": "valid/function_returning_variadic.go",
+    "valid": true
+  },
+  {
+    "file": "valid/function_signature_only.go",
+    "valid": true
+  },
+  {
+    "file": "valid/function_generic.go",
+    "valid": true
+  },
+  {
+    "file": "valid/function_generic_constraints.go",
+    "valid": true
+  },
+  {
+    "file": "valid/method_value_receiver.go",
+    "valid": true
+  },
+  {
+    "file": "valid/method_pointer_receiver.go",
+    "valid": true
+  },
+  {
+    "file": "valid/method_parenthesized_receiver.go",
+    "valid": true
+  },
+  {
+    "file": "valid/method_generic_127.go",
+    "valid": true
+  },
+  {
+    "file": "valid/closure.go",
+    "valid": true
+  },
+  {
+    "file": "valid/closure_immediate_call.go",
+    "valid": true
+  },
+  {
+    "file": "valid/call_arguments.go",
+    "valid": true
+  },
+  {
+    "file": "valid/go_defer.go",
+    "valid": true
+  },
+  {
+    "file": "valid/go_closure.go",
+    "valid": true
+  },
+  {
+    "file": "valid/selector_index.go",
+    "valid": true
+  },
+  {
+    "file": "valid/slice_two_indices.go",
+    "valid": true
+  },
+  {
+    "file": "valid/slice_three_indices.go",
+    "valid": true
+  },
+  {
+    "file": "valid/slice_omitted_indices.go",
+    "valid": true
+  },
+  {
+    "file": "valid/type_assertion.go",
+    "valid": true
+  },
+  {
+    "file": "valid/conversion.go",
+    "valid": true
+  },
+  {
+    "file": "valid/receive_conversion_ambiguity.go",
+    "valid": true
+  },
+  {
+    "file": "valid/generic_call.go",
+    "valid": true
+  },
+  {
+    "file": "valid/generic_multiple_arguments.go",
+    "valid": true
+  },
+  {
+    "file": "valid/struct_literal.go",
+    "valid": true
+  },
+  {
+    "file": "valid/array_literal.go",
+    "valid": true
+  },
+  {
+    "file": "valid/slice_literal.go",
+    "valid": true
+  },
+  {
+    "file": "valid/map_literal.go",
+    "valid": true
+  },
+  {
+    "file": "valid/nested_elided_literals.go",
+    "valid": true
+  },
+  {
+    "file": "valid/types_arrays_pointers_maps.go",
+    "valid": true
+  },
+  {
+    "file": "valid/types_struct_fields.go",
+    "valid": true
+  },
+  {
+    "file": "valid/types_interfaces.go",
+    "valid": true
+  },
+  {
+    "file": "valid/types_channels.go",
+    "valid": true
+  },
+  {
+    "file": "valid/types_function.go",
+    "valid": true
+  },
+  {
+    "file": "valid/generic_alias.go",
+    "valid": true
+  },
+  {
+    "file": "valid/generic_instantiated_literal.go",
+    "valid": true
+  },
+  {
+    "file": "valid/array_generic_ambiguity.go",
+    "valid": true
+  },
+  {
+    "file": "valid/generic_pointer_constraint.go",
+    "valid": true
+  },
+  {
+    "file": "valid/semicolon_comment.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/package_missing.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/package_duplicate.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/brace_missing.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/variable_missing_type_value.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/const_missing_value.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/const_first_omitted.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/semicolon_missing.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/if_missing_condition.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/else_newline.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/if_unparenthesized_literal.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/for_bad_post.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/for_missing_separator.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/range_bad_names.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/short_declaration_selector.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/switch_missing_case_colon.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/switch_missing_separator.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/select_plain_expression.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/select_wrong_assignment.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/function_mixed_parameters.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/function_variadic_not_last.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/function_grouped_variadic.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/function_variadic_results.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/method_double_pointer_receiver.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/go_without_call.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/defer_parenthesized_call.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/call_missing_multiline_comma.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/slice_missing_high.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/literal_after_call.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/generic_alias_ambiguous.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/numeric_binary.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/numeric_octal.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/numeric_hex.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/numeric_underscore.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/escape_invalid.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/rune_surrogate.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/string_unclosed.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/raw_unclosed.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/comment_unclosed.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/identifier_emoji.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/bom_middle.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/nul_character.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/unknown_symbol.go",
+    "valid": false
+  },
+  {
+    "file": "valid/lr_array_calls.go",
+    "valid": true
+  },
+  {
+    "file": "valid/lr_array_fields.go",
+    "valid": true
+  },
+  {
+    "file": "valid/lr_channels.go",
+    "valid": true
+  },
+  {
+    "file": "valid/lr_generic_constraints.go",
+    "valid": true
+  },
+  {
+    "file": "valid/lr_generic_types.go",
+    "valid": true
+  },
+  {
+    "file": "valid/lr_header_literals.go",
+    "valid": true
+  },
+  {
+    "file": "valid/lr_parenthesized_types.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/lr_array_trailing_comma.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/lr_empty_type_arguments.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/lr_multiple_switch_names.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/lr_non_type_arguments.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/lr_array_field_comma.go",
+    "valid": false
+  },
+  {
+    "file": "valid/lr_parenthesized_constraints.go",
+    "valid": true
+  },
+  {
+    "file": "valid/operator_precedence_levels.go",
+    "valid": true
+  },
+  {
+    "file": "valid/operator_unary_binding.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/review_array_multiple_lengths.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/review_empty_index.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/review_literal_after_number.go",
+    "valid": false
+  }
+]

@@ -1,0 +1,1 @@
+package p;func f(){select{case x+1:}}
