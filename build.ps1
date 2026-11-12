@@ -7,7 +7,8 @@ try {
     if (!$bison -or !$flex) { throw 'Flex/Bison commands were not found in PATH.' }
 
     New-Item -ItemType Directory -Path build/generated -Force | Out-Null
-    & $bison.Source -Wall -Werror=conflicts-sr -Werror=conflicts-rr -d -o build/generated/parser.tab.cpp parser/parser.y
+    # Postfix %left is explicit by design; Bison may report its associativity as redundant.
+    & $bison.Source -Wall -Wno-precedence -Werror=conflicts-sr -Werror=conflicts-rr -d -o build/generated/parser.tab.cpp parser/parser.y
     if ($LASTEXITCODE -ne 0) { throw 'Bison failed.' }
     & $flex.Source -o build/generated/scanner.cpp lexer/lexer.l
     if ($LASTEXITCODE -ne 0) { throw 'Flex failed.' }
