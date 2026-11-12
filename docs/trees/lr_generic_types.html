@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Дерево AST</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --line: light-dark(#c7d3df,#374557);
+  --accent: light-dark(#17529e,#9abcff);
+  --panel: light-dark(#f3f7fb,#161e2a);
+  --selected: light-dark(#e1edff,#263955);
+  --error: light-dark(#9e3026,#ffb0a8);
+}
+* { box-sizing: border-box; }
+body { font: 15px Inter,system-ui,sans-serif; margin: 0; background: Canvas; color: CanvasText; }
+header, main { padding: 1rem clamp(1rem,3vw,2.5rem); }
+header { border-bottom: 1px solid var(--line); }
+h1 { margin: 0 0 .45rem; font-size: 1.65rem; }
+h2 { font-size: 1.05rem; margin: 0 0 .65rem; }
+.file { overflow-wrap: anywhere; }
+nav { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; margin-bottom: .65rem; }
+nav button { cursor: pointer; border: 1px solid var(--line); border-radius: .35rem; background: Canvas; color: CanvasText; padding: .35rem .65rem; }
+nav button[aria-pressed="true"] { background: var(--selected); border-color: var(--accent); }
+#views { display: grid; grid-template-columns: minmax(0,1fr) minmax(15rem,26%); gap: 1.2rem; align-items: start; }
+#viewport { height: clamp(20rem,62vh,40rem); overflow: auto; border: 1px solid var(--line); border-radius: .55rem; background: var(--panel); cursor: grab; }
+#viewport.dragging { cursor: grabbing; user-select: none; }
+#graph { display: block; }
+.edges { fill: none; stroke: light-dark(#8194aa,#74869f); stroke-width: 1.5; }
+.graph-node { cursor: pointer; }
+.dragging .graph-node { cursor: grabbing; }
+.graph-node rect { fill: Canvas; stroke: var(--accent); stroke-width: 1.25; }
+.graph-node.terminal rect { stroke: var(--line); }
+.graph-node:hover rect, .graph-node:focus rect, .graph-node[aria-current="true"] rect { fill: var(--selected); stroke: var(--accent); stroke-width: 2.5; }
+.graph-node.error-node rect { stroke: var(--error); stroke-width: 2.5; }
+.graph-node text { fill: CanvasText; font: 600 13px Inter,system-ui,sans-serif; pointer-events: none; }
+.graph-node .node-id, .graph-node .node-detail { fill: var(--accent); font: 12px ui-monospace,monospace; }
+#tree { overflow-x: auto; padding: .25rem; }
+.children { border-left: 1px solid var(--line); margin-left: .55rem; padding-left: .85rem; }
+.row { text-align: left; cursor: pointer; padding: .3rem .4rem; border-radius: .35rem; overflow-wrap: anywhere; }
+.row:hover, .row[aria-current="true"] { background: var(--selected); }
+.leaf { display: block; font: inherit; color: inherit; background: none; border: 0; }
+.id, small { color: GrayText; font-size: .78rem; }
+.value { color: var(--accent); white-space: pre-wrap; }
+aside { border: 1px solid var(--line); border-radius: .55rem; padding: 1rem; min-width: 0; }
+pre { max-height: 65vh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.problem { border-left: 3px solid var(--error); padding: .15rem .8rem; margin-bottom: 1rem; }
+.problem pre { margin: .35rem 0; color: var(--error); }
+mark { background: light-dark(#ffd7d2,#74413d); color: CanvasText; font-weight: bold; }
+@media (max-width: 800px) { #views { grid-template-columns: minmax(0,1fr); } }
+</style>
+<header><h1>Дерево AST</h1><div class="file">tests/valid/lr_generic_types.go</div></header>
+<main>
+<nav aria-label="Режим просмотра">
+<button type="button" id="show-graph" aria-pressed="true">Граф</button>
+<button type="button" id="show-list" aria-pressed="false">Список узлов</button>
+</nav>
+<div id="views">
+<section aria-label="Узлы дерева">
+<div id="graph-view">
+<nav aria-label="Масштаб графа">
+<button type="button" id="zoom-out" aria-label="Уменьшить">−</button>
+<button type="button" id="zoom-in" aria-label="Увеличить">+</button>
+<output id="zoom-value" aria-label="Текущий масштаб">100%</output>
+<button type="button" id="zoom-fit">Уместить дерево</button>
+</nav>
+<div id="viewport" tabindex="0" aria-label="Панорама дерева. Перетащите для прокрутки">
+<svg id="graph" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Дерево AST" width="4470" height="984" viewBox="0 0 4470 984">
+<g class="edges" aria-hidden="true">
+<path d="M2015 78 C2015 100 129 100 129 122"/>
+<path d="M2015 78 C2015 100 699 100 699 122"/>
+<path d="M2015 78 C2015 100 1869 100 1869 122"/>
+<path d="M2015 78 C2015 100 2966 100 2966 122"/>
+<path d="M2015 78 C2015 100 3902 100 3902 122"/>
+<path d="M129 176 C129 198 129 198 129 220"/>
+<path d="M699 176 C699 198 699 198 699 220"/>
+<path d="M699 274 C699 296 363 296 363 318"/>
+<path d="M699 274 C699 296 1035 296 1035 318"/>
+<path d="M363 372 C363 394 363 394 363 416"/>
+<path d="M1035 372 C1035 394 1035 394 1035 416"/>
+<path d="M1035 470 C1035 492 772 492 772 514"/>
+<path d="M1035 470 C1035 492 1299 492 1299 514"/>
+<path d="M772 568 C772 590 597 590 597 612"/>
+<path d="M772 568 C772 590 948 590 948 612"/>
+<path d="M948 666 C948 688 831 688 831 710"/>
+<path d="M948 666 C948 688 1065 688 1065 710"/>
+<path d="M831 764 C831 786 831 786 831 808"/>
+<path d="M1065 764 C1065 786 1065 786 1065 808"/>
+<path d="M1869 176 C1869 198 1869 198 1869 220"/>
+<path d="M1869 274 C1869 296 1533 296 1533 318"/>
+<path d="M1869 274 C1869 296 2205 296 2205 318"/>
+<path d="M1533 372 C1533 394 1533 394 1533 416"/>
+<path d="M2205 372 C2205 394 2205 394 2205 416"/>
+<path d="M2205 470 C2205 492 1942 492 1942 514"/>
+<path d="M2205 470 C2205 492 2469 492 2469 514"/>
+<path d="M1942 568 C1942 590 1767 590 1767 612"/>
+<path d="M1942 568 C1942 590 2118 590 2118 612"/>
+<path d="M2118 666 C2118 688 2001 688 2001 710"/>
+<path d="M2118 666 C2118 688 2235 688 2235 710"/>
+<path d="M2001 764 C2001 786 2001 786 2001 808"/>
+<path d="M2235 764 C2235 786 2235 786 2235 808"/>
+<path d="M2966 176 C2966 198 2966 198 2966 220"/>
+<path d="M2966 274 C2966 296 2703 296 2703 318"/>
+<path d="M2966 274 C2966 296 3229 296 3229 318"/>
+<path d="M2703 372 C2703 394 2703 394 2703 416"/>
+<path d="M3229 372 C3229 394 3229 394 3229 416"/>
+<path d="M3229 470 C3229 492 3054 492 3054 514"/>
+<path d="M3229 470 C3229 492 3405 492 3405 514"/>
+<path d="M3054 568 C3054 590 2937 590 2937 612"/>
+<path d="M3054 568 C3054 590 3171 590 3171 612"/>
+<path d="M3171 666 C3171 688 3171 688 3171 710"/>
+<path d="M3902 176 C3902 198 3902 198 3902 220"/>
+<path d="M3902 274 C3902 296 3639 296 3639 318"/>
+<path d="M3902 274 C3902 296 4165 296 4165 318"/>
+<path d="M3639 372 C3639 394 3639 394 3639 416"/>
+<path d="M4165 372 C4165 394 4165 394 4165 416"/>
+<path d="M4165 470 C4165 492 3990 492 3990 514"/>
+<path d="M4165 470 C4165 492 4341 492 4341 514"/>
+<path d="M3990 568 C3990 590 3873 590 3873 612"/>
+<path d="M3990 568 C3990 590 4107 590 4107 612"/>
+<path d="M4107 666 C4107 688 4107 688 4107 710"/>
+<path d="M4107 764 C4107 786 4107 786 4107 808"/>
+<path d="M4107 862 C4107 884 4107 884 4107 906"/>
+</g>
+<g class="graph-node" data-node="n1" data-x="2015" data-y="24" tabindex="0" role="button" transform="translate(1910 24)"><title>#1 File</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#1</tspan> File</text><text class="node-detail" x="10" y="41">1:1 – 7:1</text></g>
+<g class="graph-node" data-node="n2" data-x="129" data-y="122" tabindex="0" role="button" transform="translate(24 122)"><title>#2 Package</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#2</tspan> Package</text><text class="node-detail" x="10" y="41">1:1 – 1:10</text></g>
+<g class="graph-node terminal" data-node="n3" data-x="129" data-y="220" tabindex="0" role="button" transform="translate(24 220)"><title>#3 Identifier · p</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#3</tspan> Identifier</text><text class="node-detail" x="10" y="41">p</text></g>
+<g class="graph-node" data-node="n4" data-x="699" data-y="122" tabindex="0" role="button" transform="translate(594 122)"><title>#4 VarDeclaration</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#4</tspan> VarDeclaration</text><text class="node-detail" x="10" y="41">3:1 – 3:25</text></g>
+<g class="graph-node" data-node="n5" data-x="699" data-y="220" tabindex="0" role="button" transform="translate(594 220)"><title>#5 VarSpec</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#5</tspan> VarSpec</text><text class="node-detail" x="10" y="41">3:5 – 3:25</text></g>
+<g class="graph-node" data-node="n6" data-x="363" data-y="318" tabindex="0" role="button" transform="translate(258 318)"><title>#6 Names</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#6</tspan> Names</text><text class="node-detail" x="10" y="41">3:5 – 3:6</text></g>
+<g class="graph-node terminal" data-node="n7" data-x="363" data-y="416" tabindex="0" role="button" transform="translate(258 416)"><title>#7 Identifier · a</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#7</tspan> Identifier</text><text class="node-detail" x="10" y="41">a</text></g>
+<g class="graph-node" data-node="n8" data-x="1035" data-y="318" tabindex="0" role="button" transform="translate(930 318)"><title>#8 Values</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#8</tspan> Values</text><text class="node-detail" x="10" y="41">3:9 – 3:25</text></g>
+<g class="graph-node" data-node="n9" data-x="1035" data-y="416" tabindex="0" role="button" transform="translate(930 416)"><title>#9 Call</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#9</tspan> Call</text><text class="node-detail" x="10" y="41">3:9 – 3:25</text></g>
+<g class="graph-node" data-node="n10" data-x="772" data-y="514" tabindex="0" role="button" transform="translate(667 514)"><title>#10 Instantiation</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#10</tspan> Instantiation</text><text class="node-detail" x="10" y="41">3:9 – 3:23</text></g>
+<g class="graph-node terminal" data-node="n11" data-x="597" data-y="612" tabindex="0" role="button" transform="translate(492 612)"><title>#11 Identifier · F</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#11</tspan> Identifier</text><text class="node-detail" x="10" y="41">F</text></g>
+<g class="graph-node" data-node="n12" data-x="948" data-y="612" tabindex="0" role="button" transform="translate(843 612)"><title>#12 TypeArguments</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#12</tspan> TypeArguments</text><text class="node-detail" x="10" y="41">3:10 – 3:23</text></g>
+<g class="graph-node" data-node="n13" data-x="831" data-y="710" tabindex="0" role="button" transform="translate(726 710)"><title>#13 NamedType</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#13</tspan> NamedType</text><text class="node-detail" x="10" y="41">3:11 – 3:14</text></g>
+<g class="graph-node terminal" data-node="n14" data-x="831" data-y="808" tabindex="0" role="button" transform="translate(726 808)"><title>#14 Identifier · int</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#14</tspan> Identifier</text><text class="node-detail" x="10" y="41">int</text></g>
+<g class="graph-node" data-node="n15" data-x="1065" data-y="710" tabindex="0" role="button" transform="translate(960 710)"><title>#15 NamedType</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#15</tspan> NamedType</text><text class="node-detail" x="10" y="41">3:16 – 3:22</text></g>
+<g class="graph-node terminal" data-node="n16" data-x="1065" data-y="808" tabindex="0" role="button" transform="translate(960 808)"><title>#16 Identifier · string</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#16</tspan> Identifier</text><text class="node-detail" x="10" y="41">string</text></g>
+<g class="graph-node terminal" data-node="n17" data-x="1299" data-y="514" tabindex="0" role="button" transform="translate(1194 514)"><title>#17 Arguments</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#17</tspan> Arguments</text><text class="node-detail" x="10" y="41">3:23 – 3:25</text></g>
+<g class="graph-node" data-node="n18" data-x="1869" data-y="122" tabindex="0" role="button" transform="translate(1764 122)"><title>#18 VarDeclaration</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#18</tspan> VarDeclaration</text><text class="node-detail" x="10" y="41">4:1 – 4:25</text></g>
+<g class="graph-node" data-node="n19" data-x="1869" data-y="220" tabindex="0" role="button" transform="translate(1764 220)"><title>#19 VarSpec</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#19</tspan> VarSpec</text><text class="node-detail" x="10" y="41">4:5 – 4:25</text></g>
+<g class="graph-node" data-node="n20" data-x="1533" data-y="318" tabindex="0" role="button" transform="translate(1428 318)"><title>#20 Names</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#20</tspan> Names</text><text class="node-detail" x="10" y="41">4:5 – 4:6</text></g>
+<g class="graph-node terminal" data-node="n21" data-x="1533" data-y="416" tabindex="0" role="button" transform="translate(1428 416)"><title>#21 Identifier · b</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#21</tspan> Identifier</text><text class="node-detail" x="10" y="41">b</text></g>
+<g class="graph-node" data-node="n22" data-x="2205" data-y="318" tabindex="0" role="button" transform="translate(2100 318)"><title>#22 Values</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#22</tspan> Values</text><text class="node-detail" x="10" y="41">4:9 – 4:25</text></g>
+<g class="graph-node" data-node="n23" data-x="2205" data-y="416" tabindex="0" role="button" transform="translate(2100 416)"><title>#23 CompositeLiteral</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#23</tspan> CompositeLiteral</text><text class="node-detail" x="10" y="41">4:9 – 4:25</text></g>
+<g class="graph-node" data-node="n24" data-x="1942" data-y="514" tabindex="0" role="button" transform="translate(1837 514)"><title>#24 NamedType</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#24</tspan> NamedType</text><text class="node-detail" x="10" y="41">4:9 – 4:23</text></g>
+<g class="graph-node terminal" data-node="n25" data-x="1767" data-y="612" tabindex="0" role="button" transform="translate(1662 612)"><title>#25 Identifier · M</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#25</tspan> Identifier</text><text class="node-detail" x="10" y="41">M</text></g>
+<g class="graph-node" data-node="n26" data-x="2118" data-y="612" tabindex="0" role="button" transform="translate(2013 612)"><title>#26 TypeArguments</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#26</tspan> TypeArguments</text><text class="node-detail" x="10" y="41">4:10 – 4:23</text></g>
+<g class="graph-node" data-node="n27" data-x="2001" data-y="710" tabindex="0" role="button" transform="translate(1896 710)"><title>#27 NamedType</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#27</tspan> NamedType</text><text class="node-detail" x="10" y="41">4:11 – 4:14</text></g>
+<g class="graph-node terminal" data-node="n28" data-x="2001" data-y="808" tabindex="0" role="button" transform="translate(1896 808)"><title>#28 Identifier · int</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#28</tspan> Identifier</text><text class="node-detail" x="10" y="41">int</text></g>
+<g class="graph-node" data-node="n29" data-x="2235" data-y="710" tabindex="0" role="button" transform="translate(2130 710)"><title>#29 NamedType</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#29</tspan> NamedType</text><text class="node-detail" x="10" y="41">4:16 – 4:22</text></g>
+<g class="graph-node terminal" data-node="n30" data-x="2235" data-y="808" tabindex="0" role="button" transform="translate(2130 808)"><title>#30 Identifier · string</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#30</tspan> Identifier</text><text class="node-detail" x="10" y="41">string</text></g>
+<g class="graph-node terminal" data-node="n31" data-x="2469" data-y="514" tabindex="0" role="button" transform="translate(2364 514)"><title>#31 LiteralValue</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#31</tspan> LiteralValue</text><text class="node-detail" x="10" y="41">4:23 – 4:25</text></g>
+<g class="graph-node" data-node="n32" data-x="2966" data-y="122" tabindex="0" role="button" transform="translate(2861 122)"><title>#32 VarDeclaration</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#32</tspan> VarDeclaration</text><text class="node-detail" x="10" y="41">5:1 – 5:18</text></g>
+<g class="graph-node" data-node="n33" data-x="2966" data-y="220" tabindex="0" role="button" transform="translate(2861 220)"><title>#33 VarSpec</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#33</tspan> VarSpec</text><text class="node-detail" x="10" y="41">5:5 – 5:18</text></g>
+<g class="graph-node" data-node="n34" data-x="2703" data-y="318" tabindex="0" role="button" transform="translate(2598 318)"><title>#34 Names</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#34</tspan> Names</text><text class="node-detail" x="10" y="41">5:5 – 5:6</text></g>
+<g class="graph-node terminal" data-node="n35" data-x="2703" data-y="416" tabindex="0" role="button" transform="translate(2598 416)"><title>#35 Identifier · c</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#35</tspan> Identifier</text><text class="node-detail" x="10" y="41">c</text></g>
+<g class="graph-node" data-node="n36" data-x="3229" data-y="318" tabindex="0" role="button" transform="translate(3124 318)"><title>#36 Values</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#36</tspan> Values</text><text class="node-detail" x="10" y="41">5:9 – 5:18</text></g>
+<g class="graph-node" data-node="n37" data-x="3229" data-y="416" tabindex="0" role="button" transform="translate(3124 416)"><title>#37 Call</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#37</tspan> Call</text><text class="node-detail" x="10" y="41">5:9 – 5:18</text></g>
+<g class="graph-node" data-node="n38" data-x="3054" data-y="514" tabindex="0" role="button" transform="translate(2949 514)"><title>#38 IndexOrInstantiation</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#38</tspan> IndexOrInstantiation</text><text class="node-detail" x="10" y="41">5:9 – 5:16</text></g>
+<g class="graph-node terminal" data-node="n39" data-x="2937" data-y="612" tabindex="0" role="button" transform="translate(2832 612)"><title>#39 Identifier · F</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#39</tspan> Identifier</text><text class="node-detail" x="10" y="41">F</text></g>
+<g class="graph-node" data-node="n40" data-x="3171" data-y="612" tabindex="0" role="button" transform="translate(3066 612)"><title>#40 Unary · *</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#40</tspan> Unary</text><text class="node-detail" x="10" y="41">*</text></g>
+<g class="graph-node terminal" data-node="n41" data-x="3171" data-y="710" tabindex="0" role="button" transform="translate(3066 710)"><title>#41 Identifier · int</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#41</tspan> Identifier</text><text class="node-detail" x="10" y="41">int</text></g>
+<g class="graph-node terminal" data-node="n42" data-x="3405" data-y="514" tabindex="0" role="button" transform="translate(3300 514)"><title>#42 Arguments</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#42</tspan> Arguments</text><text class="node-detail" x="10" y="41">5:16 – 5:18</text></g>
+<g class="graph-node" data-node="n43" data-x="3902" data-y="122" tabindex="0" role="button" transform="translate(3797 122)"><title>#43 VarDeclaration</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#43</tspan> VarDeclaration</text><text class="node-detail" x="10" y="41">6:1 – 6:24</text></g>
+<g class="graph-node" data-node="n44" data-x="3902" data-y="220" tabindex="0" role="button" transform="translate(3797 220)"><title>#44 VarSpec</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#44</tspan> VarSpec</text><text class="node-detail" x="10" y="41">6:5 – 6:24</text></g>
+<g class="graph-node" data-node="n45" data-x="3639" data-y="318" tabindex="0" role="button" transform="translate(3534 318)"><title>#45 Names</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#45</tspan> Names</text><text class="node-detail" x="10" y="41">6:5 – 6:6</text></g>
+<g class="graph-node terminal" data-node="n46" data-x="3639" data-y="416" tabindex="0" role="button" transform="translate(3534 416)"><title>#46 Identifier · d</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#46</tspan> Identifier</text><text class="node-detail" x="10" y="41">d</text></g>
+<g class="graph-node" data-node="n47" data-x="4165" data-y="318" tabindex="0" role="button" transform="translate(4060 318)"><title>#47 Values</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#47</tspan> Values</text><text class="node-detail" x="10" y="41">6:9 – 6:24</text></g>
+<g class="graph-node" data-node="n48" data-x="4165" data-y="416" tabindex="0" role="button" transform="translate(4060 416)"><title>#48 Call</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#48</tspan> Call</text><text class="node-detail" x="10" y="41">6:9 – 6:24</text></g>
+<g class="graph-node" data-node="n49" data-x="3990" data-y="514" tabindex="0" role="button" transform="translate(3885 514)"><title>#49 Instantiation</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#49</tspan> Instantiation</text><text class="node-detail" x="10" y="41">6:9 – 6:22</text></g>
+<g class="graph-node terminal" data-node="n50" data-x="3873" data-y="612" tabindex="0" role="button" transform="translate(3768 612)"><title>#50 Identifier · F</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#50</tspan> Identifier</text><text class="node-detail" x="10" y="41">F</text></g>
+<g class="graph-node" data-node="n51" data-x="4107" data-y="612" tabindex="0" role="button" transform="translate(4002 612)"><title>#51 TypeArguments</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#51</tspan> TypeArguments</text><text class="node-detail" x="10" y="41">6:10 – 6:22</text></g>
+<g class="graph-node" data-node="n52" data-x="4107" data-y="710" tabindex="0" role="button" transform="translate(4002 710)"><title>#52 ChannelType · &lt;-chan</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#52</tspan> ChannelType</text><text class="node-detail" x="10" y="41">&lt;-chan</text></g>
+<g class="graph-node" data-node="n53" data-x="4107" data-y="808" tabindex="0" role="button" transform="translate(4002 808)"><title>#53 NamedType</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#53</tspan> NamedType</text><text class="node-detail" x="10" y="41">6:18 – 6:21</text></g>
+<g class="graph-node terminal" data-node="n54" data-x="4107" data-y="906" tabindex="0" role="button" transform="translate(4002 906)"><title>#54 Identifier · int</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#54</tspan> Identifier</text><text class="node-detail" x="10" y="41">int</text></g>
+<g class="graph-node terminal" data-node="n55" data-x="4341" data-y="514" tabindex="0" role="button" transform="translate(4236 514)"><title>#55 Arguments</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#55</tspan> Arguments</text><text class="node-detail" x="10" y="41">6:22 – 6:24</text></g>
+</svg>
+</div></div>
+<div id="list-view" hidden>
+<nav aria-label="Управление списком">
+<button type="button" id="expand">Развернуть всё</button>
+<button type="button" id="collapse">Свернуть до корня</button>
+</nav>
+<div id="tree">
+<details open><summary class="row" id="n1" data-begin="0" data-end="103"><span class="id">#1</span> <strong>File</strong> <small>1:1 – 7:1</small></summary><div class="children">
+<details open><summary class="row" id="n2" data-begin="0" data-end="9"><span class="id">#2</span> <strong>Package</strong> <small>1:1 – 1:10</small></summary><div class="children">
+<button type="button" class="leaf row" id="n3" data-begin="8" data-end="9"><span class="id">#3</span> <strong>Identifier</strong> <code class="value">p</code> <small>1:9 – 1:10</small></button>
+</div></details>
+<details open><summary class="row" id="n4" data-begin="11" data-end="35"><span class="id">#4</span> <strong>VarDeclaration</strong> <small>3:1 – 3:25</small></summary><div class="children">
+<details open><summary class="row" id="n5" data-begin="15" data-end="35"><span class="id">#5</span> <strong>VarSpec</strong> <small>3:5 – 3:25</small></summary><div class="children">
+<details><summary class="row" id="n6" data-begin="15" data-end="16"><span class="id">#6</span> <strong>Names</strong> <small>3:5 – 3:6</small></summary><div class="children">
+<button type="button" class="leaf row" id="n7" data-begin="15" data-end="16"><span class="id">#7</span> <strong>Identifier</strong> <code class="value">a</code> <small>3:5 – 3:6</small></button>
+</div></details>
+<details><summary class="row" id="n8" data-begin="19" data-end="35"><span class="id">#8</span> <strong>Values</strong> <small>3:9 – 3:25</small></summary><div class="children">
+<details><summary class="row" id="n9" data-begin="19" data-end="35"><span class="id">#9</span> <strong>Call</strong> <small>3:9 – 3:25</small></summary><div class="children">
+<details><summary class="row" id="n10" data-begin="19" data-end="33"><span class="id">#10</span> <strong>Instantiation</strong> <small>3:9 – 3:23</small></summary><div class="children">
+<button type="button" class="leaf row" id="n11" data-begin="19" data-end="20"><span class="id">#11</span> <strong>Identifier</strong> <code class="value">F</code> <small>3:9 – 3:10</small></button>
+<details><summary class="row" id="n12" data-begin="20" data-end="33"><span class="id">#12</span> <strong>TypeArguments</strong> <small>3:10 – 3:23</small></summary><div class="children">
+<details><summary class="row" id="n13" data-begin="21" data-end="24"><span class="id">#13</span> <strong>NamedType</strong> <small>3:11 – 3:14</small></summary><div class="children">
+<button type="button" class="leaf row" id="n14" data-begin="21" data-end="24"><span class="id">#14</span> <strong>Identifier</strong> <code class="value">int</code> <small>3:11 – 3:14</small></button>
+</div></details>
+<details><summary class="row" id="n15" data-begin="26" data-end="32"><span class="id">#15</span> <strong>NamedType</strong> <small>3:16 – 3:22</small></summary><div class="children">
+<button type="button" class="leaf row" id="n16" data-begin="26" data-end="32"><span class="id">#16</span> <strong>Identifier</strong> <code class="value">string</code> <small>3:16 – 3:22</small></button>
+</div></details>
+</div></details>
+</div></details>
+<button type="button" class="leaf row" id="n17" data-begin="33" data-end="35"><span class="id">#17</span> <strong>Arguments</strong> <small>3:23 – 3:25</small></button>
+</div></details>
+</div></details>
+</div></details>
+</div></details>
+<details open><summary class="row" id="n18" data-begin="36" data-end="60"><span class="id">#18</span> <strong>VarDeclaration</strong> <small>4:1 – 4:25</small></summary><div class="children">
+<details open><summary class="row" id="n19" data-begin="40" data-end="60"><span class="id">#19</span> <strong>VarSpec</strong> <small>4:5 – 4:25</small></summary><div class="children">
+<details><summary class="row" id="n20" data-begin="40" data-end="41"><span class="id">#20</span> <strong>Names</strong> <small>4:5 – 4:6</small></summary><div class="children">
+<button type="button" class="leaf row" id="n21" data-begin="40" data-end="41"><span class="id">#21</span> <strong>Identifier</strong> <code class="value">b</code> <small>4:5 – 4:6</small></button>
+</div></details>
+<details><summary class="row" id="n22" data-begin="44" data-end="60"><span class="id">#22</span> <strong>Values</strong> <small>4:9 – 4:25</small></summary><div class="children">
+<details><summary class="row" id="n23" data-begin="44" data-end="60"><span class="id">#23</span> <strong>CompositeLiteral</strong> <small>4:9 – 4:25</small></summary><div class="children">
+<details><summary class="row" id="n24" data-begin="44" data-end="58"><span class="id">#24</span> <strong>NamedType</strong> <small>4:9 – 4:23</small></summary><div class="children">
+<button type="button" class="leaf row" id="n25" data-begin="44" data-end="45"><span class="id">#25</span> <strong>Identifier</strong> <code class="value">M</code> <small>4:9 – 4:10</small></button>
+<details><summary class="row" id="n26" data-begin="45" data-end="58"><span class="id">#26</span> <strong>TypeArguments</strong> <small>4:10 – 4:23</small></summary><div class="children">
+<details><summary class="row" id="n27" data-begin="46" data-end="49"><span class="id">#27</span> <strong>NamedType</strong> <small>4:11 – 4:14</small></summary><div class="children">
+<button type="button" class="leaf row" id="n28" data-begin="46" data-end="49"><span class="id">#28</span> <strong>Identifier</strong> <code class="value">int</code> <small>4:11 – 4:14</small></button>
+</div></details>
+<details><summary class="row" id="n29" data-begin="51" data-end="57"><span class="id">#29</span> <strong>NamedType</strong> <small>4:16 – 4:22</small></summary><div class="children">
+<button type="button" class="leaf row" id="n30" data-begin="51" data-end="57"><span class="id">#30</span> <strong>Identifier</strong> <code class="value">string</code> <small>4:16 – 4:22</small></button>
+</div></details>
+</div></details>
+</div></details>
+<button type="button" class="leaf row" id="n31" data-begin="58" data-end="60"><span class="id">#31</span> <strong>LiteralValue</strong> <small>4:23 – 4:25</small></button>
+</div></details>
+</div></details>
+</div></details>
+</div></details>
+<details open><summary class="row" id="n32" data-begin="61" data-end="78"><span class="id">#32</span> <strong>VarDeclaration</strong> <small>5:1 – 5:18</small></summary><div class="children">
+<details open><summary class="row" id="n33" data-begin="65" data-end="78"><span class="id">#33</span> <strong>VarSpec</strong> <small>5:5 – 5:18</small></summary><div class="children">
+<details><summary class="row" id="n34" data-begin="65" data-end="66"><span class="id">#34</span> <strong>Names</strong> <small>5:5 – 5:6</small></summary><div class="children">
+<button type="button" class="leaf row" id="n35" data-begin="65" data-end="66"><span class="id">#35</span> <strong>Identifier</strong> <code class="value">c</code> <small>5:5 – 5:6</small></button>
+</div></details>
+<details><summary class="row" id="n36" data-begin="69" data-end="78"><span class="id">#36</span> <strong>Values</strong> <small>5:9 – 5:18</small></summary><div class="children">
+<details><summary class="row" id="n37" data-begin="69" data-end="78"><span class="id">#37</span> <strong>Call</strong> <small>5:9 – 5:18</small></summary><div class="children">
+<details><summary class="row" id="n38" data-begin="69" data-end="76"><span class="id">#38</span> <strong>IndexOrInstantiation</strong> <small>5:9 – 5:16</small></summary><div class="children">
+<button type="button" class="leaf row" id="n39" data-begin="69" data-end="70"><span class="id">#39</span> <strong>Identifier</strong> <code class="value">F</code> <small>5:9 – 5:10</small></button>
+<details><summary class="row" id="n40" data-begin="71" data-end="75"><span class="id">#40</span> <strong>Unary</strong> <code class="value">*</code> <small>5:11 – 5:15</small></summary><div class="children">
+<button type="button" class="leaf row" id="n41" data-begin="72" data-end="75"><span class="id">#41</span> <strong>Identifier</strong> <code class="value">int</code> <small>5:12 – 5:15</small></button>
+</div></details>
+</div></details>
+<button type="button" class="leaf row" id="n42" data-begin="76" data-end="78"><span class="id">#42</span> <strong>Arguments</strong> <small>5:16 – 5:18</small></button>
+</div></details>
+</div></details>
+</div></details>
+</div></details>
+<details open><summary class="row" id="n43" data-begin="79" data-end="102"><span class="id">#43</span> <strong>VarDeclaration</strong> <small>6:1 – 6:24</small></summary><div class="children">
+<details open><summary class="row" id="n44" data-begin="83" data-end="102"><span class="id">#44</span> <strong>VarSpec</strong> <small>6:5 – 6:24</small></summary><div class="children">
+<details><summary class="row" id="n45" data-begin="83" data-end="84"><span class="id">#45</span> <strong>Names</strong> <small>6:5 – 6:6</small></summary><div class="children">
+<button type="button" class="leaf row" id="n46" data-begin="83" data-end="84"><span class="id">#46</span> <strong>Identifier</strong> <code class="value">d</code> <small>6:5 – 6:6</small></button>
+</div></details>
+<details><summary class="row" id="n47" data-begin="87" data-end="102"><span class="id">#47</span> <strong>Values</strong> <small>6:9 – 6:24</small></summary><div class="children">
+<details><summary class="row" id="n48" data-begin="87" data-end="102"><span class="id">#48</span> <strong>Call</strong> <small>6:9 – 6:24</small></summary><div class="children">
+<details><summary class="row" id="n49" data-begin="87" data-end="100"><span class="id">#49</span> <strong>Instantiation</strong> <small>6:9 – 6:22</small></summary><div class="children">
+<button type="button" class="leaf row" id="n50" data-begin="87" data-end="88"><span class="id">#50</span> <strong>Identifier</strong> <code class="value">F</code> <small>6:9 – 6:10</small></button>
+<details><summary class="row" id="n51" data-begin="88" data-end="100"><span class="id">#51</span> <strong>TypeArguments</strong> <small>6:10 – 6:22</small></summary><div class="children">
+<details><summary class="row" id="n52" data-begin="89" data-end="99"><span class="id">#52</span> <strong>ChannelType</strong> <code class="value">&lt;-chan</code> <small>6:11 – 6:21</small></summary><div class="children">
+<details><summary class="row" id="n53" data-begin="96" data-end="99"><span class="id">#53</span> <strong>NamedType</strong> <small>6:18 – 6:21</small></summary><div class="children">
+<button type="button" class="leaf row" id="n54" data-begin="96" data-end="99"><span class="id">#54</span> <strong>Identifier</strong> <code class="value">int</code> <small>6:18 – 6:21</small></button>
+</div></details>
+</div></details>
+</div></details>
+</div></details>
+<button type="button" class="leaf row" id="n55" data-begin="100" data-end="102"><span class="id">#55</span> <strong>Arguments</strong> <small>6:22 – 6:24</small></button>
+</div></details>
+</div></details>
+</div></details>
+</div></details>
+</div></details>
+</div></div></section>
+<aside><h2>Исходный код узла</h2><div id="selection"></div><pre id="excerpt"></pre></aside>
+</div>
+</main>
+<template id="source">cGFja2FnZSBwCgp2YXIgYSA9IEZbaW50LCBzdHJpbmddKCkKdmFyIGIgPSBNW2ludCwgc3RyaW5nXXt9CnZhciBjID0gRlsqaW50XSgpCnZhciBkID0gRls8LWNoYW4gaW50XSgpCg==</template>
+<script>
+const byId = id => document.getElementById(id);
+const bytes = Uint8Array.from(atob(byId("source").content.textContent), ch => ch.charCodeAt(0));
+const decoder = new TextDecoder("utf-8", { ignoreBOM: true });
+const fragment = (begin, end) => decoder.decode(bytes.subarray(begin, end)).replaceAll("\u0000", "␀");
+const diagnostic = byId("diagnostic");
+
+function showErrorSource() {
+  const begin = Number(diagnostic.dataset.begin);
+  const end = Number(diagnostic.dataset.end);
+  const mark = document.createElement("mark");
+  mark.textContent = fragment(begin, end) || "▮";
+  byId("error-source").append(fragment(0, begin), mark, fragment(end));
+}
+
+function setupTree() {
+  const tree = byId("tree");
+  const graph = byId("graph");
+  const viewport = byId("viewport");
+  const rows = [...tree.querySelectorAll(".row")];
+  const rowById = new Map(rows.map(row => [row.id, row]));
+  const nodes = new Map([...graph.querySelectorAll(".graph-node")].map(node => [node.dataset.node, node]));
+  const naturalWidth = Number(graph.getAttribute("width"));
+  const naturalHeight = Number(graph.getAttribute("height"));
+  let selected;
+  let scale = 1;
+
+  function select(row) {
+    if (selected) {
+      selected.removeAttribute("aria-current");
+      nodes.get(selected.id).removeAttribute("aria-current");
+    }
+    selected = row;
+    row.setAttribute("aria-current", "true");
+    nodes.get(row.id).setAttribute("aria-current", "true");
+    byId("selection").textContent = row.textContent;
+    byId("excerpt").textContent = fragment(Number(row.dataset.begin), Number(row.dataset.end));
+  }
+
+  function zoom(next, x = viewport.clientWidth / 2, y = viewport.clientHeight / 2) {
+    const old = scale;
+    scale = Math.min(2.5, Math.max(0.001, next));
+    graph.setAttribute("width", naturalWidth * scale);
+    graph.setAttribute("height", naturalHeight * scale);
+    viewport.scrollLeft = (viewport.scrollLeft + x) * scale / old - x;
+    viewport.scrollTop = (viewport.scrollTop + y) * scale / old - y;
+    byId("zoom-value").textContent = (scale < 0.01 ? (scale * 100).toFixed(1) : Math.round(scale * 100)) + "%";
+  }
+
+  function setView(graphVisible) {
+    byId("graph-view").hidden = !graphVisible;
+    byId("list-view").hidden = graphVisible;
+    byId("show-graph").setAttribute("aria-pressed", String(graphVisible));
+    byId("show-list").setAttribute("aria-pressed", String(!graphVisible));
+    if (!graphVisible) {
+      for (let parent = selected.parentElement; parent && parent !== tree; parent = parent.parentElement) {
+        if (parent.tagName === "DETAILS") parent.open = true;
+      }
+    }
+  }
+
+  byId("show-graph").addEventListener("click", () => setView(true));
+  byId("show-list").addEventListener("click", () => setView(false));
+  byId("zoom-in").addEventListener("click", () => zoom(scale * 1.25));
+  byId("zoom-out").addEventListener("click", () => zoom(scale / 1.25));
+  byId("zoom-fit").addEventListener("click", () => {
+    zoom(Math.min(1, viewport.clientWidth / naturalWidth, viewport.clientHeight / naturalHeight), 0, 0);
+    viewport.scrollLeft = viewport.scrollTop = 0;
+  });
+
+  tree.addEventListener("click", event => {
+    const row = event.target.closest(".row");
+    if (row) select(row);
+  });
+  graph.addEventListener("click", event => {
+    const node = event.target.closest(".graph-node");
+    if (node) select(rowById.get(node.dataset.node));
+  });
+  graph.addEventListener("keydown", event => {
+    const node = event.target.closest(".graph-node");
+    if (!node || (event.key !== "Enter" && event.key !== " ")) return;
+    event.preventDefault();
+    select(rowById.get(node.dataset.node));
+  });
+
+  byId("expand").addEventListener("click", () => {
+    for (const branch of tree.querySelectorAll("details")) branch.open = true;
+  });
+  byId("collapse").addEventListener("click", () => {
+    const branches = tree.querySelectorAll("details");
+    for (const branch of branches) branch.open = branch === branches[0];
+    select(rows[0]);
+  });
+
+  let drag;
+  viewport.addEventListener("pointerdown", event => {
+    if (event.button !== 0 || event.pointerType === "touch") return;
+    drag = { id: event.pointerId, x: event.clientX, y: event.clientY,
+             left: viewport.scrollLeft, top: viewport.scrollTop };
+  });
+  viewport.addEventListener("pointermove", event => {
+    if (!drag || event.pointerId !== drag.id) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    if (!viewport.hasPointerCapture(drag.id)) {
+      if (Math.hypot(dx, dy) < 5 || (event.buttons & 1) === 0) return;
+      viewport.setPointerCapture(drag.id);
+      viewport.classList.add("dragging");
+    }
+    viewport.scrollLeft = drag.left - dx;
+    viewport.scrollTop = drag.top - dy;
+  });
+  for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) {
+    viewport.addEventListener(name, () => {
+      drag = undefined;
+      viewport.classList.remove("dragging");
+    });
+  }
+
+  let first = rows[0];
+  if (diagnostic) {
+    const begin = Number(diagnostic.dataset.begin);
+    const end = Number(diagnostic.dataset.end);
+    let span = Infinity;
+    for (const row of rows) {
+      const start = Number(row.dataset.begin);
+      const finish = Number(row.dataset.end);
+      if (start <= begin && finish >= end && finish - start <= span) {
+        first = row;
+        span = finish - start;
+      }
+    }
+    nodes.get(first.id).classList.add("error-node");
+  }
+  select(first);
+  const firstNode = nodes.get(first.id);
+  viewport.scrollLeft = Number(firstNode.dataset.x) - viewport.clientWidth / 2;
+  if (diagnostic) viewport.scrollTop = Number(firstNode.dataset.y) - viewport.clientHeight / 2;
+}
+
+if (byId("graph")) setupTree();
+else showErrorSource();
+</script>
+</html>

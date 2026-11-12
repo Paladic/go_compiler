@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Дерево AST</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --line: light-dark(#c7d3df,#374557);
+  --accent: light-dark(#17529e,#9abcff);
+  --panel: light-dark(#f3f7fb,#161e2a);
+  --selected: light-dark(#e1edff,#263955);
+  --error: light-dark(#9e3026,#ffb0a8);
+}
+* { box-sizing: border-box; }
+body { font: 15px Inter,system-ui,sans-serif; margin: 0; background: Canvas; color: CanvasText; }
+header, main { padding: 1rem clamp(1rem,3vw,2.5rem); }
+header { border-bottom: 1px solid var(--line); }
+h1 { margin: 0 0 .45rem; font-size: 1.65rem; }
+h2 { font-size: 1.05rem; margin: 0 0 .65rem; }
+.file { overflow-wrap: anywhere; }
+nav { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; margin-bottom: .65rem; }
+nav button { cursor: pointer; border: 1px solid var(--line); border-radius: .35rem; background: Canvas; color: CanvasText; padding: .35rem .65rem; }
+nav button[aria-pressed="true"] { background: var(--selected); border-color: var(--accent); }
+#views { display: grid; grid-template-columns: minmax(0,1fr) minmax(15rem,26%); gap: 1.2rem; align-items: start; }
+#viewport { height: clamp(20rem,62vh,40rem); overflow: auto; border: 1px solid var(--line); border-radius: .55rem; background: var(--panel); cursor: grab; }
+#viewport.dragging { cursor: grabbing; user-select: none; }
+#graph { display: block; }
+.edges { fill: none; stroke: light-dark(#8194aa,#74869f); stroke-width: 1.5; }
+.graph-node { cursor: pointer; }
+.dragging .graph-node { cursor: grabbing; }
+.graph-node rect { fill: Canvas; stroke: var(--accent); stroke-width: 1.25; }
+.graph-node.terminal rect { stroke: var(--line); }
+.graph-node:hover rect, .graph-node:focus rect, .graph-node[aria-current="true"] rect { fill: var(--selected); stroke: var(--accent); stroke-width: 2.5; }
+.graph-node.error-node rect { stroke: var(--error); stroke-width: 2.5; }
+.graph-node text { fill: CanvasText; font: 600 13px Inter,system-ui,sans-serif; pointer-events: none; }
+.graph-node .node-id, .graph-node .node-detail { fill: var(--accent); font: 12px ui-monospace,monospace; }
+#tree { overflow-x: auto; padding: .25rem; }
+.children { border-left: 1px solid var(--line); margin-left: .55rem; padding-left: .85rem; }
+.row { text-align: left; cursor: pointer; padding: .3rem .4rem; border-radius: .35rem; overflow-wrap: anywhere; }
+.row:hover, .row[aria-current="true"] { background: var(--selected); }
+.leaf { display: block; font: inherit; color: inherit; background: none; border: 0; }
+.id, small { color: GrayText; font-size: .78rem; }
+.value { color: var(--accent); white-space: pre-wrap; }
+aside { border: 1px solid var(--line); border-radius: .55rem; padding: 1rem; min-width: 0; }
+pre { max-height: 65vh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.problem { border-left: 3px solid var(--error); padding: .15rem .8rem; margin-bottom: 1rem; }
+.problem pre { margin: .35rem 0; color: var(--error); }
+mark { background: light-dark(#ffd7d2,#74413d); color: CanvasText; font-weight: bold; }
+@media (max-width: 800px) { #views { grid-template-columns: minmax(0,1fr); } }
+</style>
+<header><h1>Дерево AST</h1><div class="file">tests/valid/local_go127_generic_method_call.go</div></header>
+<main>
+<nav aria-label="Режим просмотра">
+<button type="button" id="show-graph" aria-pressed="true">Граф</button>
+<button type="button" id="show-list" aria-pressed="false">Список узлов</button>
+</nav>
+<div id="views">
+<section aria-label="Узлы дерева">
+<div id="graph-view">
+<nav aria-label="Масштаб графа">
+<button type="button" id="zoom-out" aria-label="Уменьшить">−</button>
+<button type="button" id="zoom-in" aria-label="Увеличить">+</button>
+<output id="zoom-value" aria-label="Текущий масштаб">100%</output>
+<button type="button" id="zoom-fit">Уместить дерево</button>
+</nav>
+<div id="viewport" tabindex="0" aria-label="Панорама дерева. Перетащите для прокрутки">
+<svg id="graph" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Дерево AST" width="3066" height="886" viewBox="0 0 3066 886">
+<g class="edges" aria-hidden="true">
+<path d="M633 78 C633 100 129 100 129 122"/>
+<path d="M633 78 C633 100 1138 100 1138 122"/>
+<path d="M129 176 C129 198 129 198 129 220"/>
+<path d="M1138 176 C1138 198 363 198 363 220"/>
+<path d="M1138 176 C1138 198 597 198 597 220"/>
+<path d="M1138 176 C1138 198 1913 198 1913 220"/>
+<path d="M597 274 C597 296 597 296 597 318"/>
+<path d="M1913 274 C1913 296 1006 296 1006 318"/>
+<path d="M1913 274 C1913 296 1898 296 1898 318"/>
+<path d="M1913 274 C1913 296 2820 296 2820 318"/>
+<path d="M1006 372 C1006 394 1006 394 1006 416"/>
+<path d="M1006 470 C1006 492 831 492 831 514"/>
+<path d="M1006 470 C1006 492 1182 492 1182 514"/>
+<path d="M831 568 C831 590 831 590 831 612"/>
+<path d="M1182 568 C1182 590 1065 590 1065 612"/>
+<path d="M1182 568 C1182 590 1299 590 1299 612"/>
+<path d="M1299 666 C1299 688 1299 688 1299 710"/>
+<path d="M1299 764 C1299 786 1299 786 1299 808"/>
+<path d="M1898 372 C1898 394 1533 394 1533 416"/>
+<path d="M1898 372 C1898 394 2264 394 2264 416"/>
+<path d="M1533 470 C1533 492 1533 492 1533 514"/>
+<path d="M2264 470 C2264 492 2264 492 2264 514"/>
+<path d="M2264 568 C2264 590 2059 590 2059 612"/>
+<path d="M2264 568 C2264 590 2469 590 2469 612"/>
+<path d="M2059 666 C2059 688 1884 688 1884 710"/>
+<path d="M2059 666 C2059 688 2235 688 2235 710"/>
+<path d="M1884 764 C1884 786 1767 786 1767 808"/>
+<path d="M1884 764 C1884 786 2001 786 2001 808"/>
+<path d="M2469 666 C2469 688 2469 688 2469 710"/>
+<path d="M2820 372 C2820 394 2703 394 2703 416"/>
+<path d="M2820 372 C2820 394 2937 394 2937 416"/>
+<path d="M2703 470 C2703 492 2703 492 2703 514"/>
+<path d="M2937 470 C2937 492 2937 492 2937 514"/>
+</g>
+<g class="graph-node" data-node="n1" data-x="633" data-y="24" tabindex="0" role="button" transform="translate(528 24)"><title>#1 File</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#1</tspan> File</text><text class="node-detail" x="10" y="41">1:1 – 4:1</text></g>
+<g class="graph-node" data-node="n2" data-x="129" data-y="122" tabindex="0" role="button" transform="translate(24 122)"><title>#2 Package</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#2</tspan> Package</text><text class="node-detail" x="10" y="41">1:1 – 1:10</text></g>
+<g class="graph-node terminal" data-node="n3" data-x="129" data-y="220" tabindex="0" role="button" transform="translate(24 220)"><title>#3 Identifier · p</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#3</tspan> Identifier</text><text class="node-detail" x="10" y="41">p</text></g>
+<g class="graph-node" data-node="n4" data-x="1138" data-y="122" tabindex="0" role="button" transform="translate(1033 122)"><title>#4 Function</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#4</tspan> Function</text><text class="node-detail" x="10" y="41">3:1 – 3:56</text></g>
+<g class="graph-node terminal" data-node="n5" data-x="363" data-y="220" tabindex="0" role="button" transform="translate(258 220)"><title>#5 Identifier · f</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#5</tspan> Identifier</text><text class="node-detail" x="10" y="41">f</text></g>
+<g class="graph-node" data-node="n6" data-x="597" data-y="220" tabindex="0" role="button" transform="translate(492 220)"><title>#6 Signature</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#6</tspan> Signature</text><text class="node-detail" x="10" y="41">3:7 – 3:9</text></g>
+<g class="graph-node terminal" data-node="n7" data-x="597" data-y="318" tabindex="0" role="button" transform="translate(492 318)"><title>#7 Parameters</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#7</tspan> Parameters</text><text class="node-detail" x="10" y="41">3:7 – 3:9</text></g>
+<g class="graph-node" data-node="n8" data-x="1913" data-y="220" tabindex="0" role="button" transform="translate(1808 220)"><title>#8 Block</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#8</tspan> Block</text><text class="node-detail" x="10" y="41">3:9 – 3:56</text></g>
+<g class="graph-node" data-node="n9" data-x="1006" data-y="318" tabindex="0" role="button" transform="translate(901 318)"><title>#9 VarDeclaration</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#9</tspan> VarDeclaration</text><text class="node-detail" x="10" y="41">3:11 – 3:25</text></g>
+<g class="graph-node" data-node="n10" data-x="1006" data-y="416" tabindex="0" role="button" transform="translate(901 416)"><title>#10 VarSpec</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#10</tspan> VarSpec</text><text class="node-detail" x="10" y="41">3:15 – 3:25</text></g>
+<g class="graph-node" data-node="n11" data-x="831" data-y="514" tabindex="0" role="button" transform="translate(726 514)"><title>#11 Names</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#11</tspan> Names</text><text class="node-detail" x="10" y="41">3:15 – 3:16</text></g>
+<g class="graph-node terminal" data-node="n12" data-x="831" data-y="612" tabindex="0" role="button" transform="translate(726 612)"><title>#12 Identifier · b</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#12</tspan> Identifier</text><text class="node-detail" x="10" y="41">b</text></g>
+<g class="graph-node" data-node="n13" data-x="1182" data-y="514" tabindex="0" role="button" transform="translate(1077 514)"><title>#13 NamedType</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#13</tspan> NamedType</text><text class="node-detail" x="10" y="41">3:17 – 3:25</text></g>
+<g class="graph-node terminal" data-node="n14" data-x="1065" data-y="612" tabindex="0" role="button" transform="translate(960 612)"><title>#14 Identifier · Box</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#14</tspan> Identifier</text><text class="node-detail" x="10" y="41">Box</text></g>
+<g class="graph-node" data-node="n15" data-x="1299" data-y="612" tabindex="0" role="button" transform="translate(1194 612)"><title>#15 TypeArguments</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#15</tspan> TypeArguments</text><text class="node-detail" x="10" y="41">3:20 – 3:25</text></g>
+<g class="graph-node" data-node="n16" data-x="1299" data-y="710" tabindex="0" role="button" transform="translate(1194 710)"><title>#16 NamedType</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#16</tspan> NamedType</text><text class="node-detail" x="10" y="41">3:21 – 3:24</text></g>
+<g class="graph-node terminal" data-node="n17" data-x="1299" data-y="808" tabindex="0" role="button" transform="translate(1194 808)"><title>#17 Identifier · int</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#17</tspan> Identifier</text><text class="node-detail" x="10" y="41">int</text></g>
+<g class="graph-node" data-node="n18" data-x="1898" data-y="318" tabindex="0" role="button" transform="translate(1793 318)"><title>#18 ShortDeclaration · :=</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#18</tspan> ShortDeclaration</text><text class="node-detail" x="10" y="41">:=</text></g>
+<g class="graph-node" data-node="n19" data-x="1533" data-y="416" tabindex="0" role="button" transform="translate(1428 416)"><title>#19 Targets</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#19</tspan> Targets</text><text class="node-detail" x="10" y="41">3:27 – 3:28</text></g>
+<g class="graph-node terminal" data-node="n20" data-x="1533" data-y="514" tabindex="0" role="button" transform="translate(1428 514)"><title>#20 Identifier · x</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#20</tspan> Identifier</text><text class="node-detail" x="10" y="41">x</text></g>
+<g class="graph-node" data-node="n21" data-x="2264" data-y="416" tabindex="0" role="button" transform="translate(2159 416)"><title>#21 Values</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#21</tspan> Values</text><text class="node-detail" x="10" y="41">3:30 – 3:50</text></g>
+<g class="graph-node" data-node="n22" data-x="2264" data-y="514" tabindex="0" role="button" transform="translate(2159 514)"><title>#22 Call</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#22</tspan> Call</text><text class="node-detail" x="10" y="41">3:30 – 3:50</text></g>
+<g class="graph-node" data-node="n23" data-x="2059" data-y="612" tabindex="0" role="button" transform="translate(1954 612)"><title>#23 IndexOrInstantiation</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#23</tspan> IndexOrInstantiation</text><text class="node-detail" x="10" y="41">3:30 – 3:47</text></g>
+<g class="graph-node" data-node="n24" data-x="1884" data-y="710" tabindex="0" role="button" transform="translate(1779 710)"><title>#24 Selector</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#24</tspan> Selector</text><text class="node-detail" x="10" y="41">3:30 – 3:39</text></g>
+<g class="graph-node terminal" data-node="n25" data-x="1767" data-y="808" tabindex="0" role="button" transform="translate(1662 808)"><title>#25 Identifier · b</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#25</tspan> Identifier</text><text class="node-detail" x="10" y="41">b</text></g>
+<g class="graph-node terminal" data-node="n26" data-x="2001" data-y="808" tabindex="0" role="button" transform="translate(1896 808)"><title>#26 Identifier · Convert</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#26</tspan> Identifier</text><text class="node-detail" x="10" y="41">Convert</text></g>
+<g class="graph-node terminal" data-node="n27" data-x="2235" data-y="710" tabindex="0" role="button" transform="translate(2130 710)"><title>#27 Identifier · string</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#27</tspan> Identifier</text><text class="node-detail" x="10" y="41">string</text></g>
+<g class="graph-node" data-node="n28" data-x="2469" data-y="612" tabindex="0" role="button" transform="translate(2364 612)"><title>#28 Arguments</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#28</tspan> Arguments</text><text class="node-detail" x="10" y="41">3:47 – 3:50</text></g>
+<g class="graph-node terminal" data-node="n29" data-x="2469" data-y="710" tabindex="0" role="button" transform="translate(2364 710)"><title>#29 DecimalLiteral · 1</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#29</tspan> DecimalLiteral</text><text class="node-detail" x="10" y="41">1</text></g>
+<g class="graph-node" data-node="n30" data-x="2820" data-y="318" tabindex="0" role="button" transform="translate(2715 318)"><title>#30 Assignment · =</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#30</tspan> Assignment</text><text class="node-detail" x="10" y="41">=</text></g>
+<g class="graph-node" data-node="n31" data-x="2703" data-y="416" tabindex="0" role="button" transform="translate(2598 416)"><title>#31 Targets</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#31</tspan> Targets</text><text class="node-detail" x="10" y="41">3:51 – 3:52</text></g>
+<g class="graph-node terminal" data-node="n32" data-x="2703" data-y="514" tabindex="0" role="button" transform="translate(2598 514)"><title>#32 Identifier · _</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#32</tspan> Identifier</text><text class="node-detail" x="10" y="41">_</text></g>
+<g class="graph-node" data-node="n33" data-x="2937" data-y="416" tabindex="0" role="button" transform="translate(2832 416)"><title>#33 Values</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#33</tspan> Values</text><text class="node-detail" x="10" y="41">3:53 – 3:54</text></g>
+<g class="graph-node terminal" data-node="n34" data-x="2937" data-y="514" tabindex="0" role="button" transform="translate(2832 514)"><title>#34 Identifier · x</title><rect width="210" height="54" rx="8"/><text x="10" y="21"><tspan class="node-id">#34</tspan> Identifier</text><text class="node-detail" x="10" y="41">x</text></g>
+</svg>
+</div></div>
+<div id="list-view" hidden>
+<nav aria-label="Управление списком">
+<button type="button" id="expand">Развернуть всё</button>
+<button type="button" id="collapse">Свернуть до корня</button>
+</nav>
+<div id="tree">
+<details open><summary class="row" id="n1" data-begin="0" data-end="67"><span class="id">#1</span> <strong>File</strong> <small>1:1 – 4:1</small></summary><div class="children">
+<details open><summary class="row" id="n2" data-begin="0" data-end="9"><span class="id">#2</span> <strong>Package</strong> <small>1:1 – 1:10</small></summary><div class="children">
+<button type="button" class="leaf row" id="n3" data-begin="8" data-end="9"><span class="id">#3</span> <strong>Identifier</strong> <code class="value">p</code> <small>1:9 – 1:10</small></button>
+</div></details>
+<details open><summary class="row" id="n4" data-begin="11" data-end="66"><span class="id">#4</span> <strong>Function</strong> <small>3:1 – 3:56</small></summary><div class="children">
+<button type="button" class="leaf row" id="n5" data-begin="16" data-end="17"><span class="id">#5</span> <strong>Identifier</strong> <code class="value">f</code> <small>3:6 – 3:7</small></button>
+<details open><summary class="row" id="n6" data-begin="17" data-end="19"><span class="id">#6</span> <strong>Signature</strong> <small>3:7 – 3:9</small></summary><div class="children">
+<button type="button" class="leaf row" id="n7" data-begin="17" data-end="19"><span class="id">#7</span> <strong>Parameters</strong> <small>3:7 – 3:9</small></button>
+</div></details>
+<details open><summary class="row" id="n8" data-begin="19" data-end="66"><span class="id">#8</span> <strong>Block</strong> <small>3:9 – 3:56</small></summary><div class="children">
+<details><summary class="row" id="n9" data-begin="21" data-end="35"><span class="id">#9</span> <strong>VarDeclaration</strong> <small>3:11 – 3:25</small></summary><div class="children">
+<details><summary class="row" id="n10" data-begin="25" data-end="35"><span class="id">#10</span> <strong>VarSpec</strong> <small>3:15 – 3:25</small></summary><div class="children">
+<details><summary class="row" id="n11" data-begin="25" data-end="26"><span class="id">#11</span> <strong>Names</strong> <small>3:15 – 3:16</small></summary><div class="children">
+<button type="button" class="leaf row" id="n12" data-begin="25" data-end="26"><span class="id">#12</span> <strong>Identifier</strong> <code class="value">b</code> <small>3:15 – 3:16</small></button>
+</div></details>
+<details><summary class="row" id="n13" data-begin="27" data-end="35"><span class="id">#13</span> <strong>NamedType</strong> <small>3:17 – 3:25</small></summary><div class="children">
+<button type="button" class="leaf row" id="n14" data-begin="27" data-end="30"><span class="id">#14</span> <strong>Identifier</strong> <code class="value">Box</code> <small>3:17 – 3:20</small></button>
+<details><summary class="row" id="n15" data-begin="30" data-end="35"><span class="id">#15</span> <strong>TypeArguments</strong> <small>3:20 – 3:25</small></summary><div class="children">
+<details><summary class="row" id="n16" data-begin="31" data-end="34"><span class="id">#16</span> <strong>NamedType</strong> <small>3:21 – 3:24</small></summary><div class="children">
+<button type="button" class="leaf row" id="n17" data-begin="31" data-end="34"><span class="id">#17</span> <strong>Identifier</strong> <code class="value">int</code> <small>3:21 – 3:24</small></button>
+</div></details>
+</div></details>
+</div></details>
+</div></details>
+</div></details>
+<details><summary class="row" id="n18" data-begin="37" data-end="60"><span class="id">#18</span> <strong>ShortDeclaration</strong> <code class="value">:=</code> <small>3:27 – 3:50</small></summary><div class="children">
+<details><summary class="row" id="n19" data-begin="37" data-end="38"><span class="id">#19</span> <strong>Targets</strong> <small>3:27 – 3:28</small></summary><div class="children">
+<button type="button" class="leaf row" id="n20" data-begin="37" data-end="38"><span class="id">#20</span> <strong>Identifier</strong> <code class="value">x</code> <small>3:27 – 3:28</small></button>
+</div></details>
+<details><summary class="row" id="n21" data-begin="40" data-end="60"><span class="id">#21</span> <strong>Values</strong> <small>3:30 – 3:50</small></summary><div class="children">
+<details><summary class="row" id="n22" data-begin="40" data-end="60"><span class="id">#22</span> <strong>Call</strong> <small>3:30 – 3:50</small></summary><div class="children">
+<details><summary class="row" id="n23" data-begin="40" data-end="57"><span class="id">#23</span> <strong>IndexOrInstantiation</strong> <small>3:30 – 3:47</small></summary><div class="children">
+<details><summary class="row" id="n24" data-begin="40" data-end="49"><span class="id">#24</span> <strong>Selector</strong> <small>3:30 – 3:39</small></summary><div class="children">
+<button type="button" class="leaf row" id="n25" data-begin="40" data-end="41"><span class="id">#25</span> <strong>Identifier</strong> <code class="value">b</code> <small>3:30 – 3:31</small></button>
+<button type="button" class="leaf row" id="n26" data-begin="42" data-end="49"><span class="id">#26</span> <strong>Identifier</strong> <code class="value">Convert</code> <small>3:32 – 3:39</small></button>
+</div></details>
+<button type="button" class="leaf row" id="n27" data-begin="50" data-end="56"><span class="id">#27</span> <strong>Identifier</strong> <code class="value">string</code> <small>3:40 – 3:46</small></button>
+</div></details>
+<details><summary class="row" id="n28" data-begin="57" data-end="60"><span class="id">#28</span> <strong>Arguments</strong> <small>3:47 – 3:50</small></summary><div class="children">
+<button type="button" class="leaf row" id="n29" data-begin="58" data-end="59"><span class="id">#29</span> <strong>DecimalLiteral</strong> <code class="value">1</code> <small>3:48 – 3:49</small></button>
+</div></details>
+</div></details>
+</div></details>
+</div></details>
+<details><summary class="row" id="n30" data-begin="61" data-end="64"><span class="id">#30</span> <strong>Assignment</strong> <code class="value">=</code> <small>3:51 – 3:54</small></summary><div class="children">
+<details><summary class="row" id="n31" data-begin="61" data-end="62"><span class="id">#31</span> <strong>Targets</strong> <small>3:51 – 3:52</small></summary><div class="children">
+<button type="button" class="leaf row" id="n32" data-begin="61" data-end="62"><span class="id">#32</span> <strong>Identifier</strong> <code class="value">_</code> <small>3:51 – 3:52</small></button>
+</div></details>
+<details><summary class="row" id="n33" data-begin="63" data-end="64"><span class="id">#33</span> <strong>Values</strong> <small>3:53 – 3:54</small></summary><div class="children">
+<button type="button" class="leaf row" id="n34" data-begin="63" data-end="64"><span class="id">#34</span> <strong>Identifier</strong> <code class="value">x</code> <small>3:53 – 3:54</small></button>
+</div></details>
+</div></details>
+</div></details>
+</div></details>
+</div></details>
+</div></div></section>
+<aside><h2>Исходный код узла</h2><div id="selection"></div><pre id="excerpt"></pre></aside>
+</div>
+</main>
+<template id="source">cGFja2FnZSBwCgpmdW5jIGYoKXsgdmFyIGIgQm94W2ludF07IHg6PWIuQ29udmVydFtzdHJpbmddKDEpO189eCB9Cg==</template>
+<script>
+const byId = id => document.getElementById(id);
+const bytes = Uint8Array.from(atob(byId("source").content.textContent), ch => ch.charCodeAt(0));
+const decoder = new TextDecoder("utf-8", { ignoreBOM: true });
+const fragment = (begin, end) => decoder.decode(bytes.subarray(begin, end)).replaceAll("\u0000", "␀");
+const diagnostic = byId("diagnostic");
+
+function showErrorSource() {
+  const begin = Number(diagnostic.dataset.begin);
+  const end = Number(diagnostic.dataset.end);
+  const mark = document.createElement("mark");
+  mark.textContent = fragment(begin, end) || "▮";
+  byId("error-source").append(fragment(0, begin), mark, fragment(end));
+}
+
+function setupTree() {
+  const tree = byId("tree");
+  const graph = byId("graph");
+  const viewport = byId("viewport");
+  const rows = [...tree.querySelectorAll(".row")];
+  const rowById = new Map(rows.map(row => [row.id, row]));
+  const nodes = new Map([...graph.querySelectorAll(".graph-node")].map(node => [node.dataset.node, node]));
+  const naturalWidth = Number(graph.getAttribute("width"));
+  const naturalHeight = Number(graph.getAttribute("height"));
+  let selected;
+  let scale = 1;
+
+  function select(row) {
+    if (selected) {
+      selected.removeAttribute("aria-current");
+      nodes.get(selected.id).removeAttribute("aria-current");
+    }
+    selected = row;
+    row.setAttribute("aria-current", "true");
+    nodes.get(row.id).setAttribute("aria-current", "true");
+    byId("selection").textContent = row.textContent;
+    byId("excerpt").textContent = fragment(Number(row.dataset.begin), Number(row.dataset.end));
+  }
+
+  function zoom(next, x = viewport.clientWidth / 2, y = viewport.clientHeight / 2) {
+    const old = scale;
+    scale = Math.min(2.5, Math.max(0.001, next));
+    graph.setAttribute("width", naturalWidth * scale);
+    graph.setAttribute("height", naturalHeight * scale);
+    viewport.scrollLeft = (viewport.scrollLeft + x) * scale / old - x;
+    viewport.scrollTop = (viewport.scrollTop + y) * scale / old - y;
+    byId("zoom-value").textContent = (scale < 0.01 ? (scale * 100).toFixed(1) : Math.round(scale * 100)) + "%";
+  }
+
+  function setView(graphVisible) {
+    byId("graph-view").hidden = !graphVisible;
+    byId("list-view").hidden = graphVisible;
+    byId("show-graph").setAttribute("aria-pressed", String(graphVisible));
+    byId("show-list").setAttribute("aria-pressed", String(!graphVisible));
+    if (!graphVisible) {
+      for (let parent = selected.parentElement; parent && parent !== tree; parent = parent.parentElement) {
+        if (parent.tagName === "DETAILS") parent.open = true;
+      }
+    }
+  }
+
+  byId("show-graph").addEventListener("click", () => setView(true));
+  byId("show-list").addEventListener("click", () => setView(false));
+  byId("zoom-in").addEventListener("click", () => zoom(scale * 1.25));
+  byId("zoom-out").addEventListener("click", () => zoom(scale / 1.25));
+  byId("zoom-fit").addEventListener("click", () => {
+    zoom(Math.min(1, viewport.clientWidth / naturalWidth, viewport.clientHeight / naturalHeight), 0, 0);
+    viewport.scrollLeft = viewport.scrollTop = 0;
+  });
+
+  tree.addEventListener("click", event => {
+    const row = event.target.closest(".row");
+    if (row) select(row);
+  });
+  graph.addEventListener("click", event => {
+    const node = event.target.closest(".graph-node");
+    if (node) select(rowById.get(node.dataset.node));
+  });
+  graph.addEventListener("keydown", event => {
+    const node = event.target.closest(".graph-node");
+    if (!node || (event.key !== "Enter" && event.key !== " ")) return;
+    event.preventDefault();
+    select(rowById.get(node.dataset.node));
+  });
+
+  byId("expand").addEventListener("click", () => {
+    for (const branch of tree.querySelectorAll("details")) branch.open = true;
+  });
+  byId("collapse").addEventListener("click", () => {
+    const branches = tree.querySelectorAll("details");
+    for (const branch of branches) branch.open = branch === branches[0];
+    select(rows[0]);
+  });
+
+  let drag;
+  viewport.addEventListener("pointerdown", event => {
+    if (event.button !== 0 || event.pointerType === "touch") return;
+    drag = { id: event.pointerId, x: event.clientX, y: event.clientY,
+             left: viewport.scrollLeft, top: viewport.scrollTop };
+  });
+  viewport.addEventListener("pointermove", event => {
+    if (!drag || event.pointerId !== drag.id) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    if (!viewport.hasPointerCapture(drag.id)) {
+      if (Math.hypot(dx, dy) < 5 || (event.buttons & 1) === 0) return;
+      viewport.setPointerCapture(drag.id);
+      viewport.classList.add("dragging");
+    }
+    viewport.scrollLeft = drag.left - dx;
+    viewport.scrollTop = drag.top - dy;
+  });
+  for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) {
+    viewport.addEventListener(name, () => {
+      drag = undefined;
+      viewport.classList.remove("dragging");
+    });
+  }
+
+  let first = rows[0];
+  if (diagnostic) {
+    const begin = Number(diagnostic.dataset.begin);
+    const end = Number(diagnostic.dataset.end);
+    let span = Infinity;
+    for (const row of rows) {
+      const start = Number(row.dataset.begin);
+      const finish = Number(row.dataset.end);
+      if (start <= begin && finish >= end && finish - start <= span) {
+        first = row;
+        span = finish - start;
+      }
+    }
+    nodes.get(first.id).classList.add("error-node");
+  }
+  select(first);
+  const firstNode = nodes.get(first.id);
+  viewport.scrollLeft = Number(firstNode.dataset.x) - viewport.clientWidth / 2;
+  if (diagnostic) viewport.scrollTop = Number(firstNode.dataset.y) - viewport.clientHeight / 2;
+}
+
+if (byId("graph")) setupTree();
+else showErrorSource();
+</script>
+</html>

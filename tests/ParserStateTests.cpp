@@ -93,6 +93,79 @@ namespace {
         Require(ParseSource(source), "LR stack did not grow for a long statement list");
         Require(ParseSource("package p;var x chan<-chan int"), "nested channel type rejected");
     }
+
+    const AstNode* Find(AstKind kind) {
+        std::vector<const AstNode*> pending{astRoot};
+        while (!pending.empty()) {
+            const AstNode* node = pending.back();
+            pending.pop_back();
+            if (node->kind == kind) return node;
+            pending.insert(pending.end(), node->children.rbegin(), node->children.rend());
+        }
+        return nullptr;
+    }
+
+    void CheckAst() {
+        using K = AstKind;
+        const std::string source = R"(package p
+var value = 0xFF + 2 * 3
+var large = 1267650600228229401496703205376
+var r = '\u0410'
+var indexed = xs[1]
+var withComma = xs[1,]
+var unknown = xs[T]
+var instantiated = F[int, []byte]
+func f(x, y int) { if x < y { return } }
+)";
+        Require(ParseSource(source), "AST fixture rejected");
+        Require(astRoot && astRoot->kind == K::File && astRoot->id == 1, "missing AST root");
+        const AstNode* plus = Find(K::Binary);
+        Require(plus && plus->text == "+" && plus->children.back()->kind == K::Binary
+                && plus->children.back()->text == "*", "binary operator precedence lost in AST");
+        const AstNode* hex = Find(K::HexLiteral);
+        Require(hex && hex->text == "0xFF"
+                && source.substr(hex->range.begin, hex->range.end - hex->range.begin) == hex->text,
+                "hex literal lost its original spelling or source range");
+        const AstNode* rune = Find(K::RuneLiteral);
+        Require(rune && rune->runeValue == 1040 && rune->text == R"('\u0410')", "rune value lost in AST");
+        Require(Find(K::Index) && Find(K::IndexOrInstantiation) && Find(K::Instantiation),
+                "square bracket variants are not distinct");
+        const AstNode* parameter = Find(K::Parameter);
+        Require(parameter && parameter->children.front()->kind == K::Names
+                && parameter->children.front()->children.size() == 2, "grouped names lost");
+
+        std::vector<const AstNode*> pending{astRoot};
+        std::size_t id = 0;
+        bool indexWithComma = false;
+        while (!pending.empty()) {
+            const AstNode* node = pending.back();
+            pending.pop_back();
+            Require(node->id == ++id, "AST node IDs are duplicated or out of order");
+            Require(node->range.begin <= node->range.end && node->range.end <= source.size(),
+                    "AST source range is out of bounds");
+            if (node->kind == K::Index && node->trailingComma) indexWithComma = true;
+            pending.insert(pending.end(), node->children.rbegin(), node->children.rend());
+        }
+        Require(indexWithComma, "a trailing comma must not force type arguments");
+
+        Require(ParseSource("package p;type A[P *C,] int;type B[P *C]int"), "bracket declaration rejected");
+        const AstNode* typeParameter = Find(K::TypeParameter);
+        Require(typeParameter && typeParameter->children.back()->kind == K::PointerType,
+                "generic pointer constraint lost its pointer");
+        const AstNode* array = Find(K::ArrayType);
+        Require(array && array->children.front()->kind == K::Binary, "ambiguous array bound was reclassified");
+
+        Require(ParseSource("package p;var v=<-chan int(c).x"), "channel conversion rejected");
+        const AstNode* receive = Find(K::Receive);
+        Require(receive && receive->children.front()->kind == K::Selector
+                && receive->children.front()->children.front()->kind == K::Conversion,
+                "postfix operator was applied outside the channel receive");
+
+        Require(!ParseSource("package p;func f(){user.age := 20}"), "selector accepted before :=");
+        Require(!astRoot, "failed validation left a published root");
+        Require(ParseSource("package p;func f(){user.age = 20}") && Find(K::Assignment),
+                "ordinary selector assignment rejected after failed parse");
+    }
 }
 
 int main() {
@@ -102,7 +175,8 @@ int main() {
         CheckEncodingAndLiterals();
         CheckTokenValues();
         CheckLrStackGrowth();
-        std::cout << "Parser state, token values and expression syntax: PASS\n";
+        CheckAst();
+        std::cout << "Parser state, token values, expression syntax and AST shape: PASS\n";
         return 0;
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';

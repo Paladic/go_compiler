@@ -16,6 +16,11 @@ try {
     $sources = @(
         'parser/main.cpp',
         'parser/Parser.cpp',
+        'parser/ast/Ast.cpp',
+        'parser/ast/AstBuilder.cpp',
+        'parser/ast/AstTypes.cpp',
+        'parser/ast/AstChecks.cpp',
+        'parser/ast/AstWriter.cpp',
         'build/generated/parser.tab.cpp',
         'build/generated/scanner.cpp',
         'lexer/LexerSupport.cpp'

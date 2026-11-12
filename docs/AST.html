@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AST парсера Go 1.27</title>
+<style>
+  :root { color-scheme: light dark; --line: light-dark(#cbd5e1,#3b4655); }
+  body { margin: auto; padding: 2rem 1.25rem 4rem; max-width: 66rem; font: 16px/1.55 Inter,system-ui,sans-serif; background: Canvas; color: CanvasText; }
+  h1 { margin: 0 0 .6rem; font-size: clamp(1.8rem,4vw,2.5rem); }
+  h2 { margin: 2rem 0 .55rem; font-size: 1.35rem; }
+  p { max-width: 76ch; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; border-bottom: 1px solid var(--line); padding: .45rem .65rem; vertical-align: top; }
+  pre { border: 1px solid var(--line); padding: .85rem; border-radius: .4rem; overflow: auto; }
+  .table { overflow: auto; }
+</style>
+<main>
+<h1>AST парсера Go 1.27</h1>
+<p>В каталоге есть страница для каждого из 372 тестов. Поиск фильтрует тесты по имени файла, список результатов помогает найти успешные и отклонённые примеры. <a href="trees/index.html">Открыть каталог всех тестов</a></p>
+<p>В просмотрщике граф открывается первым. Перетаскивайте полотно, чтобы перемещаться по ветвям, и используйте кнопки масштаба. Щелчок по узлу показывает его ID, координаты и фрагмент исходника. Кнопка «Список узлов» открывает раскрываемое представление.</p>
+
+<h2>Готовые деревья</h2>
+<div class="table"><table>
+<thead><tr><th>Пример</th><th>Узлы в дереве</th><th>Исходник</th></tr></thead>
+<tbody>
+<tr><td><a href="trees/if_else.html">Ветка if / else</a></td><td><code>If, Condition, Block, Else</code></td><td><a href="../tests/valid/if_else.go">.go</a></td></tr>
+<tr><td><a href="trees/for_classic.html">Цикл с тремя частями</a></td><td><code>ForClause, Initializer, Condition, Post</code></td><td><a href="../tests/valid/for_classic.go">.go</a></td></tr>
+<tr><td><a href="trees/grammar_range_mixed_assign.html">Цикл range</a></td><td><code>Range, Targets, Selector, Index</code></td><td><a href="../tests/valid/grammar_range_mixed_assign.go">.go</a></td></tr>
+<tr><td><a href="trees/grammar_valid_nested_switch.html">Вложенные switch</a></td><td><code>Switch, Cases, Case, CaseBody</code></td><td><a href="../tests/valid/grammar_valid_nested_switch.go">.go</a></td></tr>
+<tr><td><a href="trees/grammar_valid_type_switch.html">Переключение по типу</a></td><td><code>TypeSwitch, TypeSwitchGuard, CaseTypes</code></td><td><a href="../tests/valid/grammar_valid_type_switch.go">.go</a></td></tr>
+<tr><td><a href="trees/grammar_valid_select.html">Приём в select</a></td><td><code>Select, ShortDeclaration, Receive</code></td><td><a href="../tests/valid/grammar_valid_select.go">.go</a></td></tr>
+<tr><td><a href="trees/local_go127_generic_method.html">Дженерик-метод Go 1.27</a></td><td><code>Method, Receiver, TypeParameters, Signature</code></td><td><a href="../tests/valid/local_go127_generic_method.go">.go</a></td></tr>
+<tr><td><a href="trees/literals.html">Числа, строки и руны</a></td><td><code>HexLiteral, HexFloatLiteral, StringLiteral, RuneLiteral</code></td><td><a href="../tests/valid/literals.go">.go</a></td></tr>
+<tr><td><a href="trees/lr_array_calls.html">Массивы и объявления типов</a></td><td><code>ArrayType, Call, TypeSpec, TypeParameters</code></td><td><a href="../tests/valid/lr_array_calls.go">.go</a></td></tr>
+</tbody></table></div>
+
+<h2>Сборка и запуск</h2>
+<p>Выполните команды из папки проекта. Для сборки нужны Flex, Bison и g++ с C++17 в PATH. HTML открывается локально, Graphviz нужен только для рендера DOT.</p>
+<pre><code>powershell -ExecutionPolicy Bypass -File ./build.ps1 -Test
+./build/parser.exe ./tests/valid/if_else.go --html ./build/if_else.html
+./build/parser.exe ./tests/valid/if_else.go --dot ./build/if_else.dot
+powershell -ExecutionPolicy Bypass -File ./tests/Test-Parser.ps1 -ExportTrees</code></pre>
+<p>Для рендера DOT с вашей установкой Graphviz выполните команду ниже.</p>
+<pre><code>&amp; 'C:\Program Files (x86)\Graphviz\bin\dot.exe' -Tsvg ./build/if_else.dot -o ./build/if_else.svg</code></pre>
+<p><code>--check</code> запускает разбор и проверки AST без сообщения об успехе. <code>--trace</code> показывает действия Bison. Коды выхода 0, 1 и 2 означают успешный разбор, ошибку исходника и ошибку запуска или работы с файлом соответственно. При ошибке <code>--html</code> сохраняет диагностику. Если грамматика построила дерево, страница показывает это дерево и выделяет узел, к которому относится ошибка.</p>
+
+<h2>Как строится дерево</h2>
+<ol>
+<li><code>lexer.l</code> передаёт тип токена и его значение. Для <code>0xFF</code> тип токена <code>HEX_LITERAL</code>, а значение <code>"0xFF"</code>. AST хранит его как <code>HexLiteral</code> с исходным текстом. Для руны сохраняются запись и код символа.</li>
+<li><code>parser.y</code> сопоставляет токены с правилами LALR(1). Действие вида <code>Ast::Binary(@$, "+", $1, $3)</code> создаёт узел с оператором и двумя операндами. Приоритеты определяют, что в <code>1 + 2 * 3</code> умножение будет правым дочерним узлом сложения.</li>
+<li><code>AstTypes.cpp</code> уточняет форму. В позиции типа <code>T[int]</code> содержит аргументы типа, а <code>a[1]</code> в выражении даёт <code>Index</code>. Если по форме допустимы оба варианта, как в <code>a[T]</code>, сохраняется <code>IndexOrInstantiation</code> до анализа имён и типов. Тот же проход собирает <code>a, b int</code> в группу из двух имён и общего типа.</li>
+<li><code>AstChecks.cpp</code> проверяет допустимую форму инструкций и контекст переходов. Например, <code>user.age := 20</code> даёт <code>ShortDeclaration</code>, у которого слева <code>Selector</code>. Проверка отклоняет такой узел с координатами селектора. Для <code>user.age = 20</code> строится <code>Assignment</code> и форма проходит.</li>
+<li><code>Parser.cpp</code> вызывает <code>yyparse()</code> и затем <code>Ast::Finish()</code>. После успешных проверок <code>Finish()</code> присваивает ID в порядке обхода и публикует <code>astRoot</code>. Для HTML-отчёта функция может отдельно вернуть дерево, отклонённое проверкой AST. Узлы живут до следующего вызова <code>ParseSource()</code>.</li>
+<li><code>main.cpp</code> читает файл, вызывает <code>ParseSource()</code> и передаёт дерево в <code>AstWriter.cpp</code>, если задан <code>--html</code> или <code>--dot</code>.</li>
+</ol>
+
+<h2>Проверки AST</h2>
+<ul>
+<li>Имена перед <code>:=</code>, один получатель в guard type switch, максимум два получателя в <code>range</code> и <code>select</code>, форма отправки и приёма в <code>select</code>.</li>
+<li>Допустимая форма префикса составного литерала, длины массива и аргументов типа. Например, <code>type A[P *C] int</code> даёт массив, а <code>type A[P *C,] int</code> даёт параметр типа с ограничением <code>*C</code>. <a href="https://go.dev/ref/spec#Type_parameter_declarations">Спецификация параметров типов</a></li>
+<li>Индекс допускает завершающую запятую, поэтому <code>a[1,]</code> даёт <code>Index</code>. В объявлении массива <code>[1,]int</code> запятая приводит к ошибке. <a href="https://go.dev/ref/spec#Primary_expressions">Спецификация выражений</a></li>
+<li>Группировка параметров, именованные и безымянные результаты, форма вариативного параметра.</li>
+<li>Допустимые выражения в роли инструкций, контекст <code>break</code> и <code>continue</code>, позиция <code>fallthrough</code> и уникальность <code>default</code>.</li>
+</ul>
+<p>Для проверки объявленности имён, новых переменных в <code>:=</code>, целей меток, адресуемости, совместимости типов и вычисления точных констант потребуется семантический анализ. Он, например, определит, что <code>0xFF</code> равно 255 и помещается в <code>uint8</code>.</p>
+
+<h2>Результаты тестов</h2>
+<p>Прошли 288 синтаксических тестов, 74 теста проверок AST и C++-тесты структуры дерева. Для 10 семантических примеров проверен успешный разбор. Bison собрал таблицы LALR(1) без неразрешённых конфликтов.</p>
+<p>В каталоге 251 принятое дерево, 74 дерева с диагностикой AST и 47 страниц с местом ошибки лексера или грамматики. Для 10 принятых семантических примеров в каталоге указан отдельный статус.</p>
+
+<h2>Файлы и история грамматики</h2>
+<p><code>Ast.h</code> описывает <code>AstKind</code> и данные узла. <code>AstBuilder.cpp</code> создаёт узлы, списки и корень. Операции различаются по <code>AstKind</code>, а проверки читаются как <code>switch</code> по видам узлов. Блоки, объявления, вызовы, литералы и операции видны в дереве как отдельные узлы.</p>
+<p>Грамматика остаётся в режиме <code>lalr</code> с <code>%expect 0</code>. В материалах предыдущего этапа сохранены примеры правил и экспериментальные логи <code>shift/reduce</code> и <code>reduce/reduce</code>. <a href="GRAMMAR-EXAMPLES.html">Примеры правил</a> · <a href="GRAMMAR-REVIEW.html">Обзор грамматики</a> · <a href="conflicts/INDEX.html">Логи конфликтов</a></p>
+</main>
+</html>
