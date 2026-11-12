@@ -1,0 +1,1 @@
+package p; func f(){a[0]:=1}

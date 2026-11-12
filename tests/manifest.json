@@ -453,11 +453,17 @@
   },
   {
     "file": "invalid/range_bad_names.go",
-    "valid": false
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять число получателей range и идентификаторы слева от :=."
   },
   {
     "file": "invalid/short_declaration_selector.go",
-    "valid": false
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять число получателей select и идентификаторы слева от :=."
   },
   {
     "file": "invalid/switch_missing_case_colon.go",
@@ -469,15 +475,24 @@
   },
   {
     "file": "invalid/select_plain_expression.go",
-    "valid": false
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверка операции приёма и формы/числа получателей в case select после разбора."
   },
   {
     "file": "invalid/select_wrong_assignment.go",
-    "valid": false
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверка операции приёма и формы/числа получателей в case select после разбора."
   },
   {
     "file": "invalid/function_mixed_parameters.go",
-    "valid": false
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Единый вид списка параметров и группировка имён: проверка списка после разбора."
   },
   {
     "file": "invalid/function_variadic_not_last.go",
@@ -485,7 +500,10 @@
   },
   {
     "file": "invalid/function_grouped_variadic.go",
-    "valid": false
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
   },
   {
     "file": "invalid/function_variadic_results.go",
@@ -513,11 +531,17 @@
   },
   {
     "file": "invalid/literal_after_call.go",
-    "valid": false
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверка, что префикс {...} является допустимым типом составного литерала."
   },
   {
     "file": "invalid/generic_alias_ambiguous.go",
-    "valid": false
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
   },
   {
     "file": "invalid/numeric_binary.go",
@@ -601,7 +625,10 @@
   },
   {
     "file": "invalid/lr_array_trailing_comma.go",
-    "valid": false
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
   },
   {
     "file": "invalid/lr_empty_type_arguments.go",
@@ -609,15 +636,24 @@
   },
   {
     "file": "invalid/lr_multiple_switch_names.go",
-    "valid": false
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "В guard type switch проверять ровно одно имя перед :=."
   },
   {
     "file": "invalid/lr_non_type_arguments.go",
-    "valid": false
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
   },
   {
     "file": "invalid/lr_array_field_comma.go",
-    "valid": false
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
   },
   {
     "file": "valid/lr_parenthesized_constraints.go",
@@ -633,7 +669,10 @@
   },
   {
     "file": "invalid/review_array_multiple_lengths.go",
-    "valid": false
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
   },
   {
     "file": "invalid/review_empty_index.go",
@@ -641,6 +680,1062 @@
   },
   {
     "file": "invalid/review_literal_after_number.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверка, что префикс {...} является допустимым типом составного литерала."
+  },
+  {
+    "file": "invalid/grammar_compound_multi.go",
     "valid": false
+  },
+  {
+    "file": "invalid/grammar_plain_expression_statement.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Самостоятельная инструкция должна быть вызовом или приёмом, а не произвольным значением."
+  },
+  {
+    "file": "invalid/grammar_range_three_names.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять число получателей range и идентификаторы слева от :=."
+  },
+  {
+    "file": "invalid/grammar_select_three_names.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять число получателей select и идентификаторы слева от :=."
+  },
+  {
+    "file": "invalid/grammar_select_selector_name.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять число получателей select и идентификаторы слева от :=."
+  },
+  {
+    "file": "invalid/grammar_index_trailing_comma.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
+  },
+  {
+    "file": "invalid/grammar_type_args_numeric_type_context.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
+  },
+  {
+    "file": "invalid/grammar_generic_function_no_body.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/grammar_go_parenthesized_call.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/grammar_literal_after_paren_name.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверка, что префикс {...} является допустимым типом составного литерала."
+  },
+  {
+    "file": "valid/grammar_go_conversion_semantic.go",
+    "valid": true,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Имена, типы, адресуемость, константность или цели меток требуют отдельного анализа."
+  },
+  {
+    "file": "valid/grammar_defer_conversion_semantic.go",
+    "valid": true,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Имена, типы, адресуемость, константность или цели меток требуют отдельного анализа."
+  },
+  {
+    "file": "valid/grammar_redeclare_no_new_semantic.go",
+    "valid": true,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Имена, типы, адресуемость, константность или цели меток требуют отдельного анализа."
+  },
+  {
+    "file": "valid/grammar_duplicate_parameters_semantic.go",
+    "valid": true,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Имена, типы, адресуемость, константность или цели меток требуют отдельного анализа."
+  },
+  {
+    "file": "valid/grammar_assignment_literal_semantic.go",
+    "valid": true,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Имена, типы, адресуемость, константность или цели меток требуют отдельного анализа."
+  },
+  {
+    "file": "valid/grammar_increment_literal_semantic.go",
+    "valid": true,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Имена, типы, адресуемость, константность или цели меток требуют отдельного анализа."
+  },
+  {
+    "file": "valid/grammar_nonconstant_bound_semantic.go",
+    "valid": true,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Имена, типы, адресуемость, константность или цели меток требуют отдельного анализа."
+  },
+  {
+    "file": "valid/grammar_missing_name_semantic.go",
+    "valid": true,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Имена, типы, адресуемость, константность или цели меток требуют отдельного анализа."
+  },
+  {
+    "file": "valid/grammar_wrong_return_type_semantic.go",
+    "valid": true,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Имена, типы, адресуемость, константность или цели меток требуют отдельного анализа."
+  },
+  {
+    "file": "invalid/grammar_break_outside_context.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "invalid/grammar_continue_outside_context.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "invalid/grammar_fallthrough_outside_context.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "valid/grammar_missing_goto_label_semantic.go",
+    "valid": true,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Имена, типы, адресуемость, константность или цели меток требуют отдельного анализа."
+  },
+  {
+    "file": "invalid/grammar_duplicate_default_context.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "valid/grammar_valid_go_call.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_go_paren_function.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_go_returned_function.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_go_anon.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_defer_call.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_variadic_function_result.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_switch_final_no_semicolon.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_switch_separator.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_nested_switch.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_type_switch.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_select.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_receiver_parentheses.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_receiver_parenthesized_base.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_named_group.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_unnamed_variadic.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_named_variadic_trailing.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_unnamed_variadic_trailing.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_slice_type.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_array_type.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_empty_slice_literal.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_index_call.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_type_arg_trailing.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_generic_ambiguous_comma.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_generic_ambiguous_interface.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_array_ambiguous_expression.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_two_short_names.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_valid_mixed_assignment.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_short_parenthesized_name.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять, что каждый элемент слева от := — идентификатор без скобок, вызова или селектора."
+  },
+  {
+    "file": "invalid/grammar_short_index.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять, что каждый элемент слева от := — идентификатор без скобок, вызова или селектора."
+  },
+  {
+    "file": "invalid/grammar_short_call.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять, что каждый элемент слева от := — идентификатор без скобок, вызова или селектора."
+  },
+  {
+    "file": "valid/grammar_short_three.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_assign_three.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_assign_mixed_three.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_assign_first_selector.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_range_three_assign.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять число получателей range и идентификаторы слева от :=."
+  },
+  {
+    "file": "valid/grammar_range_two_assign.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_range_mixed_assign.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_range_three_declare.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять число получателей range и идентификаторы слева от :=."
+  },
+  {
+    "file": "valid/grammar_select_two_assign.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_select_two_blank_assign.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_select_two_declare.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_select_mixed_assign.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_select_three_assign.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять число получателей select и идентификаторы слева от :=."
+  },
+  {
+    "file": "valid/grammar_select_paren_receive.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_select_double_paren_receive.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_select_binary_receive.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверка операции приёма и формы/числа получателей в case select после разбора."
+  },
+  {
+    "file": "invalid/grammar_select_assign_binary_receive.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверка операции приёма и формы/числа получателей в case select после разбора."
+  },
+  {
+    "file": "valid/grammar_select_receive_of_expression.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_standalone_parenthesized_call.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_standalone_parenthesized_receive.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_standalone_parenthesized_name.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Самостоятельная инструкция должна быть вызовом или приёмом, а не произвольным значением."
+  },
+  {
+    "file": "valid/grammar_defer_paren_function.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_go_nested_returned_call.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_go_binary.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/grammar_defer_binary.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/grammar_literal_after_nested_selector.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверка операции приёма и формы/числа получателей в case select после разбора."
+  },
+  {
+    "file": "invalid/grammar_literal_after_index_number.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверка, что префикс {...} является допустимым типом составного литерала."
+  },
+  {
+    "file": "valid/grammar_literal_generic.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_literal_pointer_prefix.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверка, что префикс {...} является допустимым типом составного литерала."
+  },
+  {
+    "file": "valid/grammar_parameter_array_named.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_parameter_array_grouped.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_parameter_qualified_unnamed.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_parameter_mixed_after_qualified.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Единый вид списка параметров и группировка имён: проверка списка после разбора."
+  },
+  {
+    "file": "invalid/grammar_parameter_mixed_after_named.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Единый вид списка параметров и группировка имён: проверка списка после разбора."
+  },
+  {
+    "file": "invalid/grammar_parameter_missing_final_type.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Единый вид списка параметров и группировка имён: проверка списка после разбора."
+  },
+  {
+    "file": "invalid/grammar_parameter_grouped_variadic_nested.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Единый вид списка параметров и группировка имён: проверка списка после разбора."
+  },
+  {
+    "file": "invalid/grammar_parameter_unnamed_then_named_variadic.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Единый вид списка параметров и группировка имён: проверка списка после разбора."
+  },
+  {
+    "file": "valid/grammar_parameter_function_variadic.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_result_mixed.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Единый вид списка параметров и группировка имён: проверка списка после разбора."
+  },
+  {
+    "file": "valid/grammar_result_qualified_unnamed.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_result_grouped_named.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_result_function_nested_variadic.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_receiver_nested_double_pointer.go",
+    "valid": false
+  },
+  {
+    "file": "valid/grammar_receiver_parenthesized_pointer.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_alias_paren_array_constraint.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_paren_array_constraint.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_alias_pointer_array_constraint.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_alias_pointer_array_union.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_alias_parenthesized_array_union.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_alias_parenthesized_array_multiple.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_alias_parenthesized_array_trailing.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_alias_pointer_union_tilde.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_alias_pointer_union_array.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_alias_call_union_tilde.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_alias_call_union_array.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_type_alias_ambiguous_union.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
+  },
+  {
+    "file": "valid/grammar_type_alias_ambiguous_union_comma.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_type_alias_ambiguous_call.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
+  },
+  {
+    "file": "valid/grammar_type_alias_ambiguous_call_comma.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_type_alias_ambiguous_call_union.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
+  },
+  {
+    "file": "valid/grammar_type_alias_ambiguous_call_union_comma.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_alias_ambiguous_call_union_tilde_chain.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_alias_multiple_ambiguous_parameters.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_alias_grouped_ambiguous_parameters.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_array_call_addition.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_array_call_string_addition.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_array_call_union.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_array_multiply_union.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_array_multiply_parenthesized_union.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_type_alias_invalid_parenthesized_union.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
+  },
+  {
+    "file": "invalid/grammar_type_alias_invalid_number_constraint.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
+  },
+  {
+    "file": "valid/grammar_array_one_numeric_arg.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_receiver_non_name_type_argument.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/grammar_receiver_qualified_type.go",
+    "valid": false
+  },
+  {
+    "file": "valid/grammar_receiver_parameter_names.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_array_many_call_args.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_array_call_with_inner_trailing_comma.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_type_alias_bad_inner_trailing_comma.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
+  },
+  {
+    "file": "valid/grammar_type_args_pointer.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_type_args_numeric_second.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
+  },
+  {
+    "file": "invalid/grammar_type_args_multiple_expressions.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Уточнение общего префикса []: индекс, длина массива, аргументы/параметры типа и обязательная запятая в неоднозначных объявлениях."
+  },
+  {
+    "file": "valid/grammar_index_unary.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_index_parenthesized.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_slice_qualified.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_assertion_qualified.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_type_switch_call.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_type_switch_selector_binding.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "В guard type switch проверять ровно одно имя перед :=."
+  },
+  {
+    "file": "invalid/grammar_type_switch_two_bindings.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "В guard type switch проверять ровно одно имя перед :=."
+  },
+  {
+    "file": "invalid/grammar_break_in_if_outside_loop.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "invalid/grammar_continue_in_switch_outside_loop.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "invalid/grammar_continue_in_select_outside_loop.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "valid/grammar_continue_in_loop_switch.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_continue_in_loop_select.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_break_in_switch.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_break_in_select.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_break_in_nested_function.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "invalid/grammar_continue_in_nested_function.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "invalid/grammar_fallthrough_final_case.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "invalid/grammar_fallthrough_type_switch.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "invalid/grammar_fallthrough_in_nested_block.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "invalid/grammar_fallthrough_followed_by_statement.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "valid/grammar_fallthrough_to_default.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_fallthrough_from_default.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_fallthrough_through_semicolons.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_duplicate_select_default.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "invalid/grammar_duplicate_type_default.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "valid/grammar_empty_label_before_brace.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_empty_label_with_semicolon.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_empty_label_before_case.go",
+    "valid": false
+  },
+  {
+    "file": "valid/grammar_nested_labels.go",
+    "valid": true
+  },
+  {
+    "file": "valid/grammar_labeled_fallthrough.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/grammar_fallthrough_before_empty_label.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Контекст перехода, порядок fallthrough или повтор default: проверка после разбора без копирования всех блоков грамматики."
+  },
+  {
+    "file": "valid/compact_postfix_nested_index.go",
+    "valid": true
+  },
+  {
+    "file": "valid/compact_postfix_nested_slice.go",
+    "valid": true
+  },
+  {
+    "file": "valid/compact_postfix_call_index.go",
+    "valid": true
+  },
+  {
+    "file": "valid/compact_postfix_long_chain.go",
+    "valid": true
+  },
+  {
+    "file": "valid/compact_postfix_index_selector.go",
+    "valid": true
+  },
+  {
+    "file": "valid/compact_postfix_call_result_chain.go",
+    "valid": true
+  },
+  {
+    "file": "valid/compact_postfix_type_assertion_chain.go",
+    "valid": true
+  },
+  {
+    "file": "valid/compact_postfix_generic_call_chain.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_short_three_names.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_short_one_multivalue.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_short_blank_binding.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/local_short_last_selector.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять число получателей select и идентификаторы слева от :=."
+  },
+  {
+    "file": "invalid/local_short_middle_index.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять, что каждый элемент слева от := — идентификатор без скобок, вызова или селектора."
+  },
+  {
+    "file": "invalid/local_short_middle_call.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять, что каждый элемент слева от := — идентификатор без скобок, вызова или селектора."
+  },
+  {
+    "file": "invalid/local_short_binary_name.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять, что каждый элемент слева от := — идентификатор без скобок, вызова или селектора."
+  },
+  {
+    "file": "invalid/local_short_unary_name.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять, что каждый элемент слева от := — идентификатор без скобок, вызова или селектора."
+  },
+  {
+    "file": "valid/local_assignment_mixed_four.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_assignment_first_call_index.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_assignment_arithmetic_lhs_syntax.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_short_if_initializer.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_short_for_initializer.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_short_switch_initializer.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_short_switch_type_initializer.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/local_short_switch_type_many_names.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "В guard type switch проверять ровно одно имя перед :=."
+  },
+  {
+    "file": "valid/local_short_range_two_blanks.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/local_short_range_second_selector.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять число получателей range и идентификаторы слева от :=."
+  },
+  {
+    "file": "valid/local_range_assign_two_complex.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/local_range_assign_four.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять число получателей range и идентификаторы слева от :=."
+  },
+  {
+    "file": "valid/local_select_assign_two_complex.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_select_short_two_names.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/local_select_short_second_selector.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять число получателей select и идентификаторы слева от :=."
+  },
+  {
+    "file": "invalid/local_select_assign_four.go",
+    "valid": false,
+    "stage": "semantic",
+    "expectedSemanticValid": false,
+    "reason": "Проверять число получателей select и идентификаторы слева от :=."
+  },
+  {
+    "file": "valid/local_receiver_name_blank_parameter.go",
+    "valid": true
+  },
+  {
+    "file": "invalid/local_receiver_parameter_selector.go",
+    "valid": false
+  },
+  {
+    "file": "invalid/local_receiver_parameter_empty.go",
+    "valid": false
+  },
+  {
+    "file": "valid/local_receiver_parameter_trailing.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_go127_generic_method.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_go127_generic_method_call.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_go127_generic_method_expression.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_go127_promoted_field_key.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_go127_selector_field_key.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_generic_channel_constraint.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_generic_parenthesized_channel_constraint.go",
+    "valid": true
+  },
+  {
+    "file": "valid/local_nested_indexes_left_assignment.go",
+    "valid": true
   }
 ]

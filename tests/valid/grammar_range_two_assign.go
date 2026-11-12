@@ -1,0 +1,6 @@
+package p
+
+func f() {
+	for a, b = range xs {
+	}
+}
