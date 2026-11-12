@@ -21,6 +21,7 @@ namespace {
     };
     std::vector<Delimiter> delimiters;
     bool headerPending = false;
+    LexerSupport::Diagnostic diagnostic;
 
     unsigned Utf8Width(unsigned char first) {
         if (first < 0x80) return 1;
@@ -66,6 +67,7 @@ void LexerSupport::Reset(const std::string& input, const std::string& name) {
     source = input;
     filename = name;
     failed = false;
+    diagnostic = {};
     line = 1;
     column = 1;
     offset = 0;
@@ -243,7 +245,12 @@ bool LexerSupport::ValidateSource() {
 }
 
 void LexerSupport::Error(SourceRange location, const std::string& message) {
+    if (!failed) diagnostic = {location, message};
     failed = true;
     std::cerr << filename << ':' << location.first_line << ':' << location.first_column
               << ": " << message << '\n';
+}
+
+const LexerSupport::Diagnostic& LexerSupport::LastError() {
+    return diagnostic;
 }

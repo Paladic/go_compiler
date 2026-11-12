@@ -5,6 +5,10 @@
 
 namespace LexerSupport {
     extern bool failed;
+    struct Diagnostic {
+        SourceRange range{};
+        std::string message;
+    };
 
     void Reset(const std::string& input, const std::string& name);
     bool ValidateSource();
@@ -22,4 +26,5 @@ namespace LexerSupport {
     bool ValidUnicodeEscape(std::string_view spelling);
     bool ValidRune(std::string_view spelling);
     void Error(SourceRange location, const std::string& message);
+    const Diagnostic& LastError();
 }

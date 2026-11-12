@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include "ast/AstBuilder.h"
 #include "LexerSupport.h"
 #include "parser.tab.hpp"
 #include <limits>
@@ -21,7 +22,9 @@ namespace {
     };
 }
 
-bool ParseSource(const std::string& source, const std::string& filename) {
+bool ParseSource(const std::string& source, const std::string& filename, const AstNode** rejectedTree) {
+    Ast::Reset();
+    if (rejectedTree) *rejectedTree = nullptr;
     LexerSupport::Reset(source, filename);
     if (source.size() > std::size_t(std::numeric_limits<int>::max()) - 2) {
         LexerSupport::Error({1, 1, 1, 1, 0, 0}, "input is too large");
@@ -32,5 +35,7 @@ bool ParseSource(const std::string& source, const std::string& filename) {
     std::size_t skip = source.compare(0, 3, "\xEF\xBB\xBF") == 0 ? 3 : 0;
     ScannerGuard scanner{yy_scan_bytes(source.data() + skip, static_cast<int>(source.size() - skip))};
     ResetLexer();
-    return yyparse() == 0 && !LexerSupport::failed;
+    if (yyparse() == 0 && !LexerSupport::failed && Ast::Finish(rejectedTree)) return true;
+    if (!rejectedTree || !*rejectedTree) Ast::Reset();
+    return false;
 }
