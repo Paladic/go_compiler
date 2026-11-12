@@ -1,0 +1,37 @@
+State 400 conflicts: 15 reduce/reduce
+State 400
+
+   81 channel_type: KW_CHAN type .  [STRING_LITERAL, RAW_STRING_LITERAL, "|", "=", "(", ")", "]", "{", "}", ",", ":", ".", "...", ";", "body {"]
+   83             | "<-" KW_CHAN type .  [STRING_LITERAL, RAW_STRING_LITERAL, "|", "=", "(", ")", "]", "{", "}", ",", ":", ".", "...", ";", "body {"]
+
+    STRING_LITERAL      reduce using rule 81 (channel_type)
+    STRING_LITERAL      [reduce using rule 83 (channel_type)]
+    RAW_STRING_LITERAL  reduce using rule 81 (channel_type)
+    RAW_STRING_LITERAL  [reduce using rule 83 (channel_type)]
+    "|"                 reduce using rule 81 (channel_type)
+    "|"                 [reduce using rule 83 (channel_type)]
+    "="                 reduce using rule 81 (channel_type)
+    "="                 [reduce using rule 83 (channel_type)]
+    "("                 reduce using rule 81 (channel_type)
+    "("                 [reduce using rule 83 (channel_type)]
+    ")"                 reduce using rule 81 (channel_type)
+    ")"                 [reduce using rule 83 (channel_type)]
+    "]"                 reduce using rule 81 (channel_type)
+    "]"                 [reduce using rule 83 (channel_type)]
+    "{"                 reduce using rule 81 (channel_type)
+    "{"                 [reduce using rule 83 (channel_type)]
+    "}"                 reduce using rule 81 (channel_type)
+    "}"                 [reduce using rule 83 (channel_type)]
+    ","                 reduce using rule 81 (channel_type)
+    ","                 [reduce using rule 83 (channel_type)]
+    ":"                 reduce using rule 81 (channel_type)
+    ":"                 [reduce using rule 83 (channel_type)]
+    "."                 reduce using rule 81 (channel_type)
+    "."                 [reduce using rule 83 (channel_type)]
+    "..."               reduce using rule 81 (channel_type)
+    "..."               [reduce using rule 83 (channel_type)]
+    ";"                 reduce using rule 81 (channel_type)
+    ";"                 [reduce using rule 83 (channel_type)]
+    "body {"            reduce using rule 81 (channel_type)
+    "body {"            [reduce using rule 83 (channel_type)]
+    $default            reduce using rule 81 (channel_type)

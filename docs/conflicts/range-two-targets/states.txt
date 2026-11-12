@@ -1,0 +1,88 @@
+State 357 conflicts: 3 shift/reduce
+State 357
+
+  133 expression: expression . "||" expression
+  134           | expression . "&&" expression
+  135           | expression . "==" expression
+  136           | expression . "!=" expression
+  137           | expression . "<" expression
+  138           | expression . "<=" expression
+  139           | expression . ">" expression
+  140           | expression . ">=" expression
+  141           | expression . "+" expression
+  142           | expression . "-" expression
+  143           | expression . "|" expression
+  144           | expression . "^" expression
+  145           | expression . "*" expression
+  146           | expression . "/" expression
+  147           | expression . "%" expression
+  148           | expression . "<<" expression
+  149           | expression . ">>" expression
+  150           | expression . "&" expression
+  151           | expression . "&^" expression
+  215 for_statement: KW_FOR expression . loop_body
+  220 range_clause: expression . "=" KW_RANGE expression
+  221             | expression . "," expression "=" KW_RANGE expression
+  222             | expression . ":=" KW_RANGE expression
+  223             | expression . "," expression ":=" KW_RANGE expression
+  267 send_statement: expression . "<-" expression
+  298 post_statement: expression .  [";"]
+  300               | expression . "++"
+  301               | expression . "--"
+  306 assignment: expression . "+=" expression
+  307           | expression . "-=" expression
+  308           | expression . "*=" expression
+  309           | expression . "/=" expression
+  310           | expression . "%=" expression
+  311           | expression . "&=" expression
+  312           | expression . "|=" expression
+  313           | expression . "^=" expression
+  314           | expression . "&^=" expression
+  315           | expression . "<<=" expression
+  316           | expression . ">>=" expression
+  322 expression_list: expression .  ["=", ":=", ","]
+
+    "+"       shift, and go to state 276
+    "-"       shift, and go to state 277
+    "*"       shift, and go to state 278
+    "/"       shift, and go to state 279
+    "%"       shift, and go to state 280
+    "&"       shift, and go to state 281
+    "|"       shift, and go to state 282
+    "^"       shift, and go to state 283
+    "&^"      shift, and go to state 284
+    "<<"      shift, and go to state 285
+    ">>"      shift, and go to state 286
+    "&&"      shift, and go to state 287
+    "||"      shift, and go to state 288
+    "=="      shift, and go to state 289
+    "!="      shift, and go to state 290
+    "<"       shift, and go to state 291
+    "<="      shift, and go to state 292
+    ">"       shift, and go to state 293
+    ">="      shift, and go to state 294
+    "="       shift, and go to state 475
+    "+="      shift, and go to state 364
+    "-="      shift, and go to state 365
+    "*="      shift, and go to state 366
+    "/="      shift, and go to state 367
+    "%="      shift, and go to state 368
+    "&="      shift, and go to state 369
+    "|="      shift, and go to state 370
+    "^="      shift, and go to state 371
+    "&^="     shift, and go to state 372
+    "<<="     shift, and go to state 373
+    ">>="     shift, and go to state 374
+    ":="      shift, and go to state 476
+    "++"      shift, and go to state 375
+    "--"      shift, and go to state 376
+    "<-"      shift, and go to state 377
+    ","       shift, and go to state 477
+    "body {"  shift, and go to state 356
+
+    "="       [reduce using rule 322 (expression_list)]
+    ":="      [reduce using rule 322 (expression_list)]
+    ","       [reduce using rule 322 (expression_list)]
+    $default  reduce using rule 298 (post_statement)
+
+    loop_body  go to state 478

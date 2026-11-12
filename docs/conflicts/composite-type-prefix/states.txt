@@ -1,0 +1,61 @@
+State 165 conflicts: 2 shift/reduce
+State 165
+
+   47 type_name: identifier .  ["{"]
+   48          | identifier . "." identifier
+   49          | identifier . type_arguments
+   50          | identifier . "." identifier type_arguments
+  161 primary_expression: identifier .  ["+", "-", "*", "/", "%", "&", "|", "^", "&^", "<<", ">>", "&&", "||", "==", "!=", "<", "<=", ">", ">=", "=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "&^=", "<<=", ">>=", ":=", "++", "--", "<-", "(", ")", "[", "]", "}", ",", ":", ".", "...", ";", "body {"]
+
+    "["  shift, and go to state 182
+    "."  shift, and go to state 183
+
+    "["       [reduce using rule 161 (primary_expression)]
+    "{"       reduce using rule 47 (type_name)
+    "."       [reduce using rule 161 (primary_expression)]
+    $default  reduce using rule 161 (primary_expression)
+
+    type_arguments  go to state 184
+
+State 176 conflicts: 2 shift/reduce
+State 176
+
+   47 type_name: identifier .  ["{"]
+   48          | identifier . "." identifier
+   49          | identifier . type_arguments
+   50          | identifier . "." identifier type_arguments
+  161 primary_expression: identifier .  [IDENTIFIER, KW_FUNC, KW_INTERFACE, KW_MAP, KW_STRUCT, KW_CHAN, "+", "-", "*", "/", "%", "&", "|", "^", "&^", "<<", ">>", "&&", "||", "==", "!=", "<", "<=", ">", ">=", "<-", "(", "[", "]", ",", ":", "."]
+  333 bracket_item: identifier . "~" type type_terms_tail
+
+    "~"  shift, and go to state 318
+    "["  shift, and go to state 182
+    "."  shift, and go to state 183
+
+    "["       [reduce using rule 161 (primary_expression)]
+    "{"       reduce using rule 47 (type_name)
+    "."       [reduce using rule 161 (primary_expression)]
+    $default  reduce using rule 161 (primary_expression)
+
+    type_arguments  go to state 184
+
+State 242 conflicts: 2 shift/reduce
+State 242
+
+   47 type_name: identifier .  ["{"]
+   48          | identifier . "." identifier
+   49          | identifier . type_arguments
+   50          | identifier . "." identifier type_arguments
+  161 primary_expression: identifier .  ["+", "-", "*", "/", "%", "&", "|", "^", "&^", "<<", ">>", "&&", "||", "==", "!=", "<", "<=", ">", ">=", "=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "&^=", "<<=", ">>=", ":=", "++", "--", "<-", "(", "[", "}", ",", ".", ";"]
+  315 labeled_statement: identifier . ":" statement
+  316                  | identifier . ":"
+
+    "["  shift, and go to state 182
+    ":"  shift, and go to state 382
+    "."  shift, and go to state 183
+
+    "["       [reduce using rule 161 (primary_expression)]
+    "{"       reduce using rule 47 (type_name)
+    "."       [reduce using rule 161 (primary_expression)]
+    $default  reduce using rule 161 (primary_expression)
+
+    type_arguments  go to state 184

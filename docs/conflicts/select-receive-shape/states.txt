@@ -1,0 +1,10 @@
+State 574 conflicts: 1 reduce/reduce
+State 574
+
+  159 unary_expression: "<-" unary_expression .  ["+", "-", "*", "/", "%", "&", "|", "^", "&^", "<<", ">>", "&&", "||", "==", "!=", "<", "<=", ">", ">=", "=", ":=", "<-", ")", ","]
+  265 receive_expression: "<-" unary_expression .  [")", ":"]
+
+    ")"       reduce using rule 159 (unary_expression)
+    ")"       [reduce using rule 265 (receive_expression)]
+    ":"       reduce using rule 265 (receive_expression)
+    $default  reduce using rule 159 (unary_expression)

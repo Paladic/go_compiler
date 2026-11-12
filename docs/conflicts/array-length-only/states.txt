@@ -1,0 +1,51 @@
+State 182 conflicts: 1 shift/reduce
+State 182
+
+   61 array_type: "[" expression . "]" type
+  134 expression: expression . "||" expression
+  135           | expression . "&&" expression
+  136           | expression . "==" expression
+  137           | expression . "!=" expression
+  138           | expression . "<" expression
+  139           | expression . "<=" expression
+  140           | expression . ">" expression
+  141           | expression . ">=" expression
+  142           | expression . "+" expression
+  143           | expression . "-" expression
+  144           | expression . "|" expression
+  145           | expression . "^" expression
+  146           | expression . "*" expression
+  147           | expression . "/" expression
+  148           | expression . "%" expression
+  149           | expression . "<<" expression
+  150           | expression . ">>" expression
+  151           | expression . "&" expression
+  152           | expression . "&^" expression
+  325 bracket_item: expression .  ["]", ","]
+  335             | expression . "*" non_expression_type type_terms_tail
+  336             | expression . "|" "~" type type_terms_tail
+  337             | expression . "|" non_expression_type type_terms_tail
+
+    "+"   shift, and go to state 274
+    "-"   shift, and go to state 275
+    "*"   shift, and go to state 312
+    "/"   shift, and go to state 277
+    "%"   shift, and go to state 278
+    "&"   shift, and go to state 279
+    "|"   shift, and go to state 313
+    "^"   shift, and go to state 281
+    "&^"  shift, and go to state 282
+    "<<"  shift, and go to state 283
+    ">>"  shift, and go to state 284
+    "&&"  shift, and go to state 285
+    "||"  shift, and go to state 286
+    "=="  shift, and go to state 287
+    "!="  shift, and go to state 288
+    "<"   shift, and go to state 289
+    "<="  shift, and go to state 290
+    ">"   shift, and go to state 291
+    ">="  shift, and go to state 292
+    "]"   shift, and go to state 305
+
+    "]"       [reduce using rule 325 (bracket_item)]
+    $default  reduce using rule 325 (bracket_item)

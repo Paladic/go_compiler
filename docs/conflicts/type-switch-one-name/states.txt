@@ -1,0 +1,10 @@
+State 350 conflicts: 1 shift/reduce
+State 350
+
+  161 primary_expression: identifier .  ["+", "-", "*", "/", "%", "&", "|", "^", "&^", "<<", ">>", "&&", "||", "==", "!=", "<", "<=", ">", ">=", "=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "&^=", "<<=", ">>=", ":=", "++", "--", "<-", "(", "[", "{", ",", ".", ";", "body {"]
+  239 type_switch_guard: identifier . ":=" primary_expression "." "(" KW_TYPE ")"
+
+    ":="  shift, and go to state 471
+
+    ":="      [reduce using rule 161 (primary_expression)]
+    $default  reduce using rule 161 (primary_expression)

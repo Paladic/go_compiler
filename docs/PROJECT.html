@@ -1,0 +1,117 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Устройство и сборка</title><style>:root{font-family:Segoe UI,Arial,sans-serif;line-height:1.65;color:#233244;background:#f3f6f8}*{box-sizing:border-box}body{margin:0}main{max-width:1120px;margin:auto;padding:32px 24px 70px}h1{font-size:36px;line-height:1.2}h2{font-size:25px;margin:32px 0 14px}h3{font-size:20px}p{margin:14px 0}nav{display:flex;gap:22px;flex-wrap:wrap;font-size:14px}a{color:#076e5c}section{padding:24px;background:white;border:1px solid #dce4e9;border-radius:12px;margin:20px 0}code{font-family:Consolas,monospace;font-size:.92em;overflow-wrap:anywhere}pre{background:#172c3c;color:#e6f4ef;padding:18px;overflow:auto;border-radius:8px;line-height:1.5}table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:12px;border-bottom:1px solid #dce4e9;text-align:left;vertical-align:top}.table-wrap{overflow:auto}th{background:#eef3f5}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.stat{padding:18px;border:1px solid #d1e1da;border-radius:8px;background:#eff8f4}.stat strong{display:block;font-size:30px;color:#076e5c}.notice{border-left:4px solid #bd790a;background:#fff7e9;padding:14px 18px}.muted{color:#54667a}details{border:1px solid #dce4e9;padding:15px;margin:10px 0;background:white;border-radius:8px}summary{cursor:pointer;font-weight:600}.pending{color:#8a5708}li{margin:8px 0}input{font:inherit;padding:9px 12px;max-width:100%;border:1px solid #8e9cab;border-radius:6px}button{font:inherit;cursor:pointer;padding:8px 14px}footer{font-size:13px;margin-top:32px}footer code{overflow-wrap:anywhere}@media(max-width:650px){main{padding:20px 14px}h1{font-size:29px}.stats{grid-template-columns:1fr}section{padding:18px}table{min-width:650px}}</style></head><body><main><nav><a href="GRAMMAR-REVIEW.html">Обзор</a><a href="GRAMMAR-EXAMPLES.html">Правила с примерами</a><a href="PROJECT.html">Сборка и устройство</a><a href="conflicts/INDEX.html">Конфликты Bison</a></nav><h1>Грамматика Go 1.27 для LALR(1)</h1>
+<p>В parser/parser.y 614 строк, 108 правил и 344 альтернатив. В предыдущем варианте с разделением идентификаторов и выражений было 637 строк, 125 правил и 403 альтернативы. Режим LALR(1), %expect 0 и %left для <a href="https://go.dev/ref/spec"> и . сохранены. Ориентир — [спецификация Go 1.27</a>.</p>
+<h2>Сборка и запуск</h2>
+<p>Нужны Flex, Bison и g++ с C++17 в PATH. Запускать из папки проекта:</p>
+<pre><code>
+powershell -ExecutionPolicy Bypass -File ./build.ps1 -Test
+./build/parser.exe ./tests/valid/if_else.go --check
+powershell -ExecutionPolicy Bypass -File ./tests/Test-Parser.ps1
+</code></pre>
+<p>--trace включает трассировку. Коды завершения: 0 — вход распознан, 1 — ошибка исходника, 2 — ошибка запуска или чтения. AST и его проверки ещё не реализованы.</p>
+<h2>Что изменено</h2>
+<ul>
+<li>Слева от := и = используется expression_list. Для := будущий обход AST проверит, что каждый элемент — идентификатор, а не селектор, индекс, вызов или имя в скобках.</li>
+<li>Удалены non_identifier_* и assignment_left_*. Бинарные операторы снова описаны в expression с пятью уровнями %left.</li>
+<li>Объединены хвосты аргументов, списки элементов литералов и общая часть простых инструкций. Удалены обёртки package_clause, result_atomic_type и отдельные правила внешней формы switch.</li>
+<li>Параметры и результаты используют общие правила типов. Получатель метода сохраняет локальное имя, список имён параметров и не более одного указателя.</li>
+<li>chan_prefix, общий префикс [] и отдельный список результатов в скобках сохранены, чтобы не возвращать конфликты Bison.</li>
+</ul>
+<h2>Что проверять после построения AST</h2>
+<p>Форма списка перед :=, одно имя в guard type switch, число получателей range/select, приём в select, допустимый префикс составного литерала, содержимое [] по контексту, вид и группировка параметров, цели переходов, fallthrough и повтор default. Отдельно нужны анализ имён и типов, адресуемость, новое имя в := и вычисление констант. Пример: user.age := 20 сейчас распознаётся; проверка AST должна его отклонить. Присваивание user.age = 20 сохраняет допустимую форму.</p>
+<p>В <a href="conflicts/INDEX.html">архиве конфликтов</a> восемь отдельных папок. В каждой — candidate.y, лог Bison и конфликтующие состояния с объяснением. Эти файлы не участвуют в сборке. Два случая — направление канала и скобки результата — оставлены в грамматике; остальные показанные ограничения отложены. Для других отложенных проверок лог не приписан без отдельного эксперимента.</p>
+<h2>Результаты</h2>
+<p>Сборка и C++-тесты прошли. Синтаксические тесты: <strong>286/286</strong>. Все 371 файлов сохранены. 85 отложенных проверок, в том числе 24 перенесённых в этой переработке, имеют статус pending и не входят в passed. В манифесте сохраняется ожидаемый отрицательный результат будущей проверки.</p>
+<p>В корпусе есть объявления и вызовы generic-методов и ключи полей Go 1.27. Дополнительная проверка стандартной библиотеки установленного Go 1.26.2: 6491/6492 файлов приняты, отклонён документационный builtin.go. Это не проверка компилятором Go 1.27.</p>
+<ul>
+<li><a href="GRAMMAR-REVIEW.html">Обзор и отложенные проверки</a></li>
+<li><a href="GRAMMAR-EXAMPLES.html">Объяснение правил с примерами</a></li>
+<li><a href="conflicts/INDEX.html">Логи и причины конфликтов</a></li>
+</ul>
+<h2>Как получается исполняемый парсер</h2>
+<p>При запуске <code>build.ps1</code> выполняются три шага:</p>
+<ul>
+<li>Bison читает <code>parser/parser.y</code> и создаёт <code>build/generated/parser.tab.cpp</code> и <code>parser.tab.hpp</code>. В <code>.cpp</code> находится алгоритм разбора с функцией <code>yyparse()</code>, в <code>.hpp</code> — объявления токенов, типов и интерфейса парсера.</li>
+<li>Flex читает <code>lexer/lexer.l</code> и создаёт <code>build/generated/scanner.cpp</code> с функцией <code>yylex()</code>.</li>
+<li>g++ компилирует сгенерированные файлы вместе с <code>main.cpp</code>, <code>Parser.cpp</code> и <code>LexerSupport.cpp</code> в <code>build/parser.exe</code>.</li>
+</ul>
+<p>Сгенерированные <code>.cpp</code> восстанавливаются при сборке. Изменения правил вносят в <code>parser.y</code> и <code>lexer.l</code>.</p>
+<div class="table-wrap"><table>
+<tr><td>Файл</td><td>Роль</td></tr>
+<tr><td><code>parser/parser.y</code></td><td>Написанная нами грамматика: токены, правила и приоритеты</td></tr>
+<tr><td><code>build/generated/parser.tab.cpp</code></td><td>Сгенерированный Bison алгоритм разбора</td></tr>
+<tr><td><code>parser/Parser.cpp</code></td><td>Написанная нами подготовка лексера и запуск разбора</td></tr>
+<tr><td><code>parser/main.cpp</code></td><td>Точка входа в консольную программу</td></tr>
+</table></div>
+<p><code>Parser.cpp</code> и <code>parser.tab.cpp</code> — разные файлы. Грамматика превращается в <code>parser.tab.cpp</code>; <code>Parser.cpp</code> только предоставляет удобный способ её запустить.</p>
+<h2>Зачем нужен main.cpp</h2>
+<p><code>main.cpp</code> обслуживает запуск <code>parser.exe</code>. Он получает имя файла и параметры командной строки, читает исходный текст и передаёт его в <code>ParseSource()</code>. Правила Go находятся в <code>parser.y</code>.</p>
+<p>В файле три основные функции:</p>
+<div class="table-wrap"><table>
+<tr><td>Функция</td><td>Что делает</td></tr>
+<tr><td><code>ReadArguments()</code></td><td>Получает аргументы командной строки. В Windows переводит их из UTF-16 в UTF-8, чтобы корректно обрабатывать пути с кириллицей</td></tr>
+<tr><td><code>Run()</code></td><td>Разбирает параметры, читает файл или stdin, вызывает <code>ParseSource()</code> и сообщает результат</td></tr>
+<tr><td><code>main()</code></td><td>Настраивает вывод UTF-8 в Windows, вызывает <code>ReadArguments()</code> и <code>Run()</code>, перехватывает ошибки запуска и чтения</td></tr>
+</table></div>
+<p>Например, для команды:</p>
+<pre><code>
+.\build\parser.exe .\tests\valid\if_else.go --check
+</code></pre>
+<p><code>main.cpp</code> читает файл <code>if_else.go</code>, передаёт его содержимое в <code>ParseSource()</code> и возвращает код завершения. Параметр <code>--check</code> подавляет только сообщение <code>Syntax OK</code>; сам разбор выполняется так же. <code>--trace</code> устанавливает <code>yydebug = 1</code> и включает трассировку, поддержку которой добавляет <code>%define parse.trace</code>.</p>
+<p>Если имя файла не передано либо указано <code>-</code>, текст читается из стандартного ввода. Ошибки открытия файла и неизвестные параметры перехватываются в <code>main()</code> и приводят к коду завершения 2. Ошибка исходника приводит к коду 1.</p>
+<h2>Зачем нужен Parser.cpp</h2>
+<p><code>Parser.cpp</code> предоставляет одну функцию для запуска разбора из программы или тестов:</p>
+<pre><code>
+bool ParseSource(const std::string&amp; source,
+                 const std::string&amp; filename = &quot;&lt;input&gt;&quot;);
+</code></pre>
+<p>Объявление находится в <code>Parser.h</code>; реализация — в <code>Parser.cpp</code>. <code>source</code> содержит уже прочитанный текст, а <code>filename</code> используется в диагностике.</p>
+<p>Внутри выполняются следующие действия:</p>
+<ul>
+<li><code>LexerSupport::Reset(source, filename)</code> сохраняет текущий текст и имя файла, сбрасывает координаты, значения токенов и состояние диагностики.</li>
+<li>Проверяется размер текста: функция Flex принимает длину через <code>int</code>, поэтому слишком большой ввод отклоняется.</li>
+<li><code>LexerSupport::ValidateSource()</code> проверяет допустимость исходного текста, в том числе кодировку UTF-8 и наличие запрещённого NUL.</li>
+<li>Если в начале файла есть UTF-8 BOM, эти три байта пропускаются перед передачей текста сканеру.</li>
+<li><code>yy_scan_bytes()</code> создаёт входной буфер Flex из текста. <code>ResetLexer()</code> сбрасывает режим лексера и состояние вставки точек с запятой перед очередным разбором.</li>
+<li><code>yyparse()</code> запускает сгенерированный Bison парсер. Во время разбора он сам вызывает <code>yylex()</code>, когда требуется следующий токен.</li>
+</ul>
+<p>Результат вычисляется строкой:</p>
+<pre><code>
+return yyparse() == 0 &amp;&amp; !LexerSupport::failed;
+</code></pre>
+<p><code>true</code> означает, что текущая грамматика приняла текст и лексер не сообщил об ошибке. Это ещё не означает, что выполнены все проверки языка: известные ограничения перечислены ниже.</p>
+<p>Внутренняя структура <code>ScannerGuard</code> отвечает за освобождение ресурсов. При выходе из функции её деструктор вызывает <code>yy_delete_buffer()</code> и <code>yylex_destroy()</code>: удаляет входной буфер и освобождает внутренние ресурсы сканера. Она не является нодой и не участвует в построении дерева.</p>
+<p>Для последовательного разбора следующего файла снова вызывают <code>ParseSource()</code>. Одновременный разбор из нескольких потоков не поддерживается: Flex, Bison и LexerSupport используют общее состояние.</p>
+<h2>Нужны ли эти C++-файлы для самой грамматики</h2>
+<p>Для проверки правил Bison и генерации его выходных файлов <code>main.cpp</code> и <code>Parser.cpp</code> не требуются. Их задача — обеспечить запуск полученного парсера.</p>
+<p>В текущем проекте они входят в сборку программы и тестов. Простое удаление этих файлов нарушит сборку исполняемых файлов, хотя Bison по-прежнему сможет обработать <code>parser.y</code>. Какой-либо код запуска с точкой входа <code>main()</code> нужен для самостоятельной консольной программы.</p>
+<p>Разделение запуска на два файла — решение об организации кода. Их можно объединить или упростить. Сейчас отдельная функция <code>ParseSource()</code> позволяет тестам передавать строки напрямую и многократно запускать разбор без командной строки и файлов на диске. При сборке C++-тестов <code>main.cpp</code> исключается, а точку входа предоставляет <code>tests/ParserStateTests.cpp</code>.</p>
+<h2>Путь исходника при запуске</h2>
+<pre><code>
+main.cpp
+  main() → ReadArguments() → Run()
+                              │
+                              ├─ чтение файла или stdin
+                              ↓
+Parser.cpp: ParseSource()
+  LexerSupport::Reset() → ValidateSource()
+  yy_scan_bytes() → ResetLexer()
+                              ↓
+parser.tab.cpp: yyparse()
+  вызывает scanner.cpp: yylex() для получения токенов
+  выполняет разбор по правилам parser.y
+                              ↓
+ParseSource() возвращает bool
+  Run() возвращает код завершения
+</code></pre>
+<p>Успешный разбор в этой копии не создаёт никаких объектов дерева.</p>
+<h2>Что означают значения токенов</h2>
+<p>В <code>%union</code> объявлены два способа передачи данных от лексера к парсеру:</p>
+<pre><code>
+%union {
+    long long integerValue;
+    const std::string* stringValue;
+}
+</code></pre>
+<p><code>%token &lt;stringValue&gt; DECIMAL_LITERAL</code> указывает, какое поле используется для данных токена. Лексер заполняет <code>yylval.stringValue</code> и возвращает код <code>DECIMAL_LITERAL</code>. Тип токена и передаваемые данные — отдельные части этой операции.</p>
+<p>Числовые литералы сейчас сохраняют исходную запись: например, для <code>0xFF</code> передаётся текст <code>0xFF</code>. Это сохраняет основание, подчёркивания, степень и суффикс <code>i</code>, а также позволяет избежать обрезания больших целых до <code>long long</code> и округления дробей до <code>double</code>. Вычисление числовых значений выражений на этом этапе не выполняется.</p>
+<p><code>RUNE_LITERAL</code> передаёт декодированное целое значение через <code>integerValue</code>: например, <code>&#39;A&#39;</code> даёт 65, а <code>&#39;\n&#39;</code> — 10. Имена и строки используют <code>stringValue</code>; строковые литералы сохраняются с исходными кавычками и escape-последовательностями. Строками владеет LexerSupport, который очищает их перед следующим разбором.</p><footer class="muted">12 ноября 2026 · SHA-256 parser.y: <code>67b5051e9b4614a8d90e06589141cae099fc33cf2267530afa34237acd51a155</code></footer></main></body></html>

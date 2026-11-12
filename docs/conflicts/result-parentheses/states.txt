@@ -1,0 +1,10 @@
+State 242 conflicts: 1 shift/reduce
+State 242
+
+   46 type: "(" type . ")"
+  120 parameter_item: type .  [")", ","]
+
+    ")"  shift, and go to state 304
+
+    ")"       [reduce using rule 120 (parameter_item)]
+    $default  reduce using rule 120 (parameter_item)

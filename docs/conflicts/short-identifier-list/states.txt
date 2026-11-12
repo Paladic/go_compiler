@@ -1,0 +1,25 @@
+State 241 conflicts: 1 reduce/reduce
+State 241
+
+  161 primary_expression: identifier .  ["+", "-", "*", "/", "%", "&", "|", "^", "&^", "<<", ">>", "&&", "||", "==", "!=", "<", "<=", ">", ">=", "=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "&^=", "<<=", ">>=", "++", "--", "<-", "(", "[", "{", "}", ",", ".", ";"]
+  315 labeled_statement: identifier . ":" statement
+  316                  | identifier . ":"
+  318 identifier_list: identifier .  [":=", ","]
+
+    ":"  shift, and go to state 384
+
+    ":="      reduce using rule 318 (identifier_list)
+    ","       reduce using rule 161 (primary_expression)
+    ","       [reduce using rule 318 (identifier_list)]
+    $default  reduce using rule 161 (primary_expression)
+
+State 351 conflicts: 1 reduce/reduce
+State 351
+
+  161 primary_expression: identifier .  ["+", "-", "*", "/", "%", "&", "|", "^", "&^", "<<", ">>", "&&", "||", "==", "!=", "<", "<=", ">", ">=", "=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "&^=", "<<=", ">>=", "++", "--", "<-", "(", "[", "{", ",", ":", ".", ";", "body {"]
+  318 identifier_list: identifier .  [":=", ","]
+
+    ":="      reduce using rule 318 (identifier_list)
+    ","       reduce using rule 161 (primary_expression)
+    ","       [reduce using rule 318 (identifier_list)]
+    $default  reduce using rule 161 (primary_expression)
